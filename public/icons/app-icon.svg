@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="St George Hospital Management System">
+  <defs>
+    <linearGradient id="bg" x1="40" y1="30" x2="470" y2="490" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#087078"/>
+      <stop offset="1" stop-color="#073f45"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="394" cy="103" r="98" fill="#fff" opacity=".06"/>
+  <path fill="#fff" d="M205 95h102v110h110v102H307v110H205V307H95V205h110z"/>
+  <path fill="#81ded4" d="M227 117h58v110h110v58H285v110h-58V285H117v-58h110z" opacity=".32"/>
+</svg>

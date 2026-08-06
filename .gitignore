@@ -1,0 +1,9 @@
+.DS_Store
+.env
+node_modules/
+coverage/
+*.log
+data/*.db
+data/*.db-shm
+data/*.db-wal
+evidence/runtime/

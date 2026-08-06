@@ -1,0 +1,34 @@
+St George Hospital Management System — integration evidence
+Date: 2026-08-05 (Australia/Sydney)
+Runtime: Node.js v24.14.0
+Database: fresh in-memory SQLite database per test; deterministic synthetic seed data only
+Revision: uncommitted working tree — rerun after the team creates the GitHub revision used for submission
+
+Command:
+/Users/tanmoymajumder/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --test --test-reporter=spec tests/integration.test.js
+
+Result: PASS — 12 passed, 0 failed, 0 skipped; total duration 10.64 seconds
+
+PASS T-AUTH-01: login, session cookie, current user, expiry and logout
+PASS T-AUTH-02: seeded passwords are salted slow hashes and verify safely
+PASS T-RBAC-01 / T-CSRF-01: mutations reject missing CSRF and forbidden roles
+PASS T-PAT-01: receptionist creates a validated patient and unique MRN
+PASS T-APT-01 / T-APT-02: doctor books an appointment and overlap is atomic 409
+PASS T-CLN-01: doctor appends an attributed clinical note
+PASS T-LAB-01: doctor order flows to a lab-technician result
+PASS T-PHM-01 / T-PHM-02: dispensing decrements stock and rejects unsafe batches
+PASS T-BIL-01: invoice totals and payment-derived status remain consistent
+PASS T-AUD-01: failed authentication and material writes retain actor/object/time evidence
+PASS T-SCOPE-01: a patient sees only their own records
+PASS T-PWA-01: static shell, manifest, worker and icons are served with security headers
+
+Covered requirement/test labels:
+T-AUTH-01, T-AUTH-02, T-CSRF-01, T-RBAC-01, T-PAT-01, T-APT-01,
+T-APT-02, T-CLN-01, T-LAB-01, T-PHM-01, T-PHM-02, T-BIL-01,
+T-AUD-01, T-SCOPE-01, T-PWA-01.
+
+Evidence limitation:
+This result supports the implemented MVP subset only. It does not prove production TLS,
+200 concurrent users, uptime, backup/restore, notification delivery, payment-gateway
+integration, full WCAG conformance, supervisor approval, lecturer feedback, forum activity,
+or individual team-member contribution.

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="St George Hospital Management System">
+  <defs>
+    <radialGradient id="bg" cx="35%" cy="25%" r="90%">
+      <stop stop-color="#0a8588"/>
+      <stop offset="1" stop-color="#073f45"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="162" fill="#fff" opacity=".08"/>
+  <path fill="#fff" d="M218 125h76v93h93v76h-93v93h-76v-93h-93v-76h93z"/>
+</svg>

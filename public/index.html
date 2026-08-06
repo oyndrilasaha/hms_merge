@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b5f66">
+  <meta name="description" content="Secure multi-branch hospital administration portal for the St George Hospital Management System.">
+  <title>St George Hospital Management System</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <svg class="svg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-cross" viewBox="0 0 24 24"><path d="M9.2 3h5.6v6.2H21v5.6h-6.2V21H9.2v-6.2H3V9.2h6.2z"/></symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z"/></symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6.5 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM9 13c-4.4 0-7 2.2-7 5.5V21h14v-2.5C16 15.2 13.4 13 9 13Zm6.8.5c-.8 0-1.6.1-2.2.3 2.7 1.1 4.4 3.1 4.4 5.7V21h4v-2.2c0-3.2-2.3-5.3-6.2-5.3Z"/></symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M7 2h2v3h6V2h2v3h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V2Zm13 8H4v10h16V10ZM7 13h4v4H7v-4Z"/></symbol>
+    <symbol id="icon-clinical" viewBox="0 0 24 24"><path d="M7 2h10v3h2a2 2 0 0 1 2 2v14H3V7a2 2 0 0 1 2-2h2V2Zm2 2v2h6V4H9Zm2 5v3H8v2h3v3h2v-3h3v-2h-3V9h-2Z"/></symbol>
+    <symbol id="icon-pill" viewBox="0 0 24 24"><path d="M16.8 2.8a5.5 5.5 0 0 1 3.9 9.4l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a5.5 5.5 0 0 1 3.9-1.6ZM9.1 18.6l3.5-3.5-3.7-3.7-3.5 3.5a2.6 2.6 0 0 0 3.7 3.7Zm5.6-5.6 4-4a2.6 2.6 0 0 0-3.7-3.7l-4 4 3.7 3.7Z"/></symbol>
+    <symbol id="icon-receipt" viewBox="0 0 24 24"><path d="M5 2h14v20l-2.5-1.5L14 22l-2-1.5L10 22l-2.5-1.5L5 22V2Zm3 5v2h8V7H8Zm0 4v2h8v-2H8Zm0 4v2h5v-2H8Z"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 2 9 4v6c0 5.4-3.8 9.2-9 10-5.2-.8-9-4.6-9-10V6l9-4Zm0 4.2L7 8.4V12c0 3.2 2 5.5 5 6.4 3-.9 5-3.2 5-6.4V8.4l-5-2.2Zm-1 3h2v4.6h-2V9.2Zm0 6h2v2h-2v-2Z"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M3 5h18v2H3zm0 6h18v2H3zm0 6h18v2H3z"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 1 1-4.7 13.3L2 20.1 3.9 22l3.8-3.8A7.5 7.5 0 0 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m8 9 4 4 4-4 1.5 1.5L12 16l-5.5-5.5L8 9Z"/></symbol>
+    <symbol id="icon-logout" viewBox="0 0 24 24"><path d="M4 3h9v2H6v14h7v2H4V3Zm13 4 5 5-5 5-1.4-1.4 2.6-2.6H10v-2h8.2l-2.6-2.6L17 7Z"/></symbol>
+  </svg>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <main id="login-view" class="login-view">
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="brand-lockup brand-lockup--login">
+        <span class="brand-mark" aria-hidden="true"><svg><use href="#icon-cross"></use></svg></span>
+        <span><strong>St George</strong><small>Hospital Management System</small></span>
+      </div>
+      <div class="login-copy">
+        <p class="eyebrow">Secure clinical operations</p>
+        <h1 id="login-title">Welcome back</h1>
+        <p>Sign in to your authorised workspace. Access is role-based and all changes are recorded.</p>
+      </div>
+      <form id="login-form" class="stack-form" novalidate data-testid="login-form">
+        <label for="login-username">Username</label>
+        <input id="login-username" name="username" type="text" autocomplete="username" required placeholder="e.g. admin">
+        <label for="login-password">Password</label>
+        <div class="password-field">
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required minlength="8">
+          <button id="toggle-password" class="text-button" type="button" aria-pressed="false">Show</button>
+        </div>
+        <button class="button button--primary button--wide" type="submit">
+          <span>Sign in securely</span><span aria-hidden="true">→</span>
+        </button>
+        <p id="login-status" class="form-status" role="alert"></p>
+      </form>
+      <div class="privacy-note">
+        <svg aria-hidden="true"><use href="#icon-shield"></use></svg>
+        <span><strong>Training environment.</strong> Use synthetic patient data only. Never enter real health information.</span>
+      </div>
+    </section>
+    <aside class="login-art" aria-hidden="true">
+      <div class="art-copy">
+        <span class="art-chip">One connected care team</span>
+        <h2>Clear information.<br>Safer care.</h2>
+        <p>Patients, appointments, clinical operations and accounts in one secure workspace.</p>
+      </div>
+      <div class="art-orbit art-orbit--one"></div>
+      <div class="art-orbit art-orbit--two"></div>
+      <div class="art-card art-card--top"><span>Today's care</span><strong>On schedule</strong></div>
+      <div class="art-card art-card--bottom"><span>Security</span><strong>Audit active</strong></div>
+    </aside>
+  </main>
+
+  <div id="app-shell" class="app-shell" hidden>
+    <header class="topbar">
+      <button id="menu-toggle" class="icon-button menu-toggle" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">
+        <svg><use href="#icon-menu"></use></svg>
+      </button>
+      <a class="brand-lockup brand-lockup--topbar" href="#dashboard" aria-label="St George Hospital Management System dashboard">
+        <span class="brand-mark" aria-hidden="true"><svg><use href="#icon-cross"></use></svg></span>
+        <span><strong>St George</strong><small>Hospital Management System</small></span>
+      </a>
+      <div class="topbar-actions">
+        <span id="network-status" class="network-status" title="Network status"><i></i><span>Online</span></span>
+        <button id="install-button" class="button button--quiet install-button" type="button" hidden>Install app</button>
+        <label class="branch-picker" for="branch-select">
+          <span>Branch</span>
+          <select id="branch-select" data-testid="branch-selector"><option value="">All branches</option></select>
+        </label>
+        <button id="profile-button" class="profile-button" type="button" aria-haspopup="menu" aria-expanded="false">
+          <span id="user-avatar" class="avatar" aria-hidden="true">SG</span>
+          <span class="profile-copy"><strong id="user-name">User</strong><small id="user-role">Role</small></span>
+          <svg aria-hidden="true"><use href="#icon-chevron"></use></svg>
+        </button>
+        <div id="profile-menu" class="profile-menu" role="menu" hidden>
+          <button id="logout-button" type="button" role="menuitem"><svg aria-hidden="true"><use href="#icon-logout"></use></svg>Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <aside id="sidebar" class="sidebar" aria-label="Primary navigation">
+      <nav id="primary-nav">
+        <p class="nav-label">Workspace</p>
+        <button class="nav-item" type="button" data-page="dashboard" data-testid="nav-dashboard">
+          <svg aria-hidden="true"><use href="#icon-grid"></use></svg><span>Dashboard</span>
+        </button>
+        <button class="nav-item" type="button" data-page="patients" data-testid="nav-patients">
+          <svg aria-hidden="true"><use href="#icon-users"></use></svg><span>Patients</span>
+        </button>
+        <button class="nav-item" type="button" data-page="appointments" data-testid="nav-appointments">
+          <svg aria-hidden="true"><use href="#icon-calendar"></use></svg><span>Appointments</span>
+        </button>
+        <button class="nav-item" type="button" data-page="clinical" data-testid="nav-clinical">
+          <svg aria-hidden="true"><use href="#icon-clinical"></use></svg><span>Clinical &amp; labs</span>
+        </button>
+        <button class="nav-item" type="button" data-page="pharmacy" data-testid="nav-pharmacy">
+          <svg aria-hidden="true"><use href="#icon-pill"></use></svg><span>Pharmacy</span>
+        </button>
+        <button class="nav-item" type="button" data-page="billing" data-testid="nav-billing">
+          <svg aria-hidden="true"><use href="#icon-receipt"></use></svg><span>Billing</span>
+        </button>
+        <p class="nav-label nav-label--admin">Governance</p>
+        <button class="nav-item" type="button" data-page="audit" data-testid="nav-audit">
+          <svg aria-hidden="true"><use href="#icon-shield"></use></svg><span>Audit trail</span>
+        </button>
+      </nav>
+      <div class="sidebar-notice">
+        <svg aria-hidden="true"><use href="#icon-shield"></use></svg>
+        <div><strong>Synthetic data only</strong><span>Training and assessment system</span></div>
+      </div>
+    </aside>
+    <div id="sidebar-scrim" class="sidebar-scrim" hidden></div>
+
+    <main id="main-content" class="main-content" tabindex="-1">
+      <section id="page-header" class="page-header">
+        <div>
+          <p id="page-eyebrow" class="eyebrow">Overview</p>
+          <h1 id="page-title">Dashboard</h1>
+          <p id="page-description">A live view of care activity across your authorised branches.</p>
+        </div>
+        <div id="page-actions" class="page-actions"></div>
+      </section>
+
+      <div id="page-loading" class="page-loading" aria-live="polite" hidden>
+        <span class="spinner" aria-hidden="true"></span><span>Loading current records…</span>
+      </div>
+      <section id="page-content" aria-live="polite" aria-busy="false"></section>
+    </main>
+  </div>
+
+  <dialog id="record-dialog" class="record-dialog" aria-labelledby="dialog-title">
+    <form id="record-form" method="dialog" novalidate data-testid="record-form">
+      <header class="dialog-header">
+        <div><p id="dialog-eyebrow" class="eyebrow">New record</p><h2 id="dialog-title">Create record</h2></div>
+        <button id="dialog-close" class="icon-button" type="button" aria-label="Close dialog">×</button>
+      </header>
+      <p id="dialog-description" class="dialog-description"></p>
+      <div id="dialog-fields" class="form-grid"></div>
+      <p id="dialog-status" class="form-status" role="alert"></p>
+      <footer class="dialog-footer">
+        <button id="dialog-cancel" class="button button--secondary" type="button">Cancel</button>
+        <button id="dialog-submit" class="button button--primary" type="submit">Save</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <noscript>This application needs JavaScript enabled to run securely.</noscript>
+  <script src="/app.js" defer></script>
+</body>
+</html>
