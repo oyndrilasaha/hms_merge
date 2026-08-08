@@ -118,11 +118,13 @@ async function init() {
   updateNetworkStatus();
   registerServiceWorker();
   initChatbot();
+  initPublicSearch();
   await restoreSession();
 }
 
 function cacheElements() {
   const ids = [
+    'public-portal', 'portal-toggle', 'hero-portal-btn', 'back-to-home', 'public-search', 'search-quick-tags',
     'login-view', 'login-form', 'login-username', 'login-password', 'login-status',
     'toggle-password', 'app-shell', 'menu-toggle', 'sidebar', 'sidebar-scrim',
     'primary-nav', 'network-status', 'install-button', 'branch-select', 'profile-button',
@@ -138,6 +140,13 @@ function cacheElements() {
 }
 
 function bindGlobalEvents() {
+  elements.portalToggle?.addEventListener('click', () => showLogin());
+  elements.heroPortalBtn?.addEventListener('click', () => showLogin());
+  elements.backToHome?.addEventListener('click', () => showPublicPortal());
+  document.querySelectorAll('.trigger-portal-link').forEach(btn => btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    showLogin();
+  }));
   elements.loginForm.addEventListener('submit', handleLogin);
   elements.togglePassword.addEventListener('click', togglePasswordVisibility);
   elements.logoutButton.addEventListener('click', handleLogout);
@@ -185,7 +194,7 @@ async function restoreSession() {
     if (!state.user) throw new Error('Session response did not include a user.');
     await enterApplication();
   } catch (error) {
-    showLogin(error.status && error.status !== 401 ? 'The server is unavailable. You can try signing in again.' : '');
+    showPublicPortal();
   }
 }
 
@@ -230,14 +239,10 @@ function applyAuthResponse(response) {
   state.branchId = state.role !== 'admin' && assignedBranchId ? String(assignedBranchId) : '';
 }
 
-async function enterApplication() {
+function showPublicPortal() {
+  elements.appShell.hidden = true;
   elements.loginView.hidden = true;
-  elements.appShell.hidden = false;
-  updateUserInterface();
-  await loadReferenceData();
-  const hashPage = window.location.hash.replace('#', '');
-  const initialPage = getAllowedPages().includes(hashPage) ? hashPage : 'dashboard';
-  navigateTo(initialPage, { updateHash: true, focus: false });
+  if (elements.publicPortal) elements.publicPortal.hidden = false;
 }
 
 function showLogin(message = '') {
@@ -245,9 +250,21 @@ function showLogin(message = '') {
   state.csrfToken = '';
   state.role = '';
   elements.appShell.hidden = true;
+  if (elements.publicPortal) elements.publicPortal.hidden = true;
   elements.loginView.hidden = false;
   setLoginStatus(message, Boolean(message));
   requestAnimationFrame(() => elements.loginUsername.focus());
+}
+
+async function enterApplication() {
+  if (elements.publicPortal) elements.publicPortal.hidden = true;
+  elements.loginView.hidden = true;
+  elements.appShell.hidden = false;
+  updateUserInterface();
+  await loadReferenceData();
+  const hashPage = window.location.hash.replace('#', '');
+  const initialPage = getAllowedPages().includes(hashPage) ? hashPage : 'dashboard';
+  navigateTo(initialPage, { updateHash: true, focus: false });
 }
 
 async function handleLogout() {
@@ -259,7 +276,8 @@ async function handleLogout() {
   } finally {
     clearOperationalState();
     history.replaceState(null, '', window.location.pathname);
-    showLogin('You have signed out.');
+    showPublicPortal();
+    showToast('You have signed out securely.', 'info');
   }
 }
 
@@ -1775,5 +1793,30 @@ function getAssistantReply(text) {
     return "Hello! I am your St George Care Assistant. I am here to help guide you on using this Hospital Management System. Select one of the quick suggestions or ask a question below!";
   }
   
-  return "I'm sorry, I didn't quite capture that. Try asking about patient registration, booking appointments, billing/invoices, clinical notes, CSV exports, or select one of the suggested topics below.";
+function initPublicSearch() {
+  if (!elements.publicSearch) return;
+
+  function filterContent(query) {
+    const clean = query.trim().toLowerCase();
+    const items = document.querySelectorAll('[data-search-content]');
+    items.forEach((item) => {
+      const content = (item.dataset.searchContent || '').toLowerCase();
+      const text = item.textContent.toLowerCase();
+      const match = !clean || content.includes(clean) || text.includes(clean);
+      item.style.display = match ? '' : 'none';
+    });
+  }
+
+  elements.publicSearch.addEventListener('input', (e) => {
+    filterContent(e.target.value);
+  });
+
+  elements.searchQuickTags?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-search-term]');
+    if (btn) {
+      elements.publicSearch.value = btn.dataset.searchTerm;
+      filterContent(btn.dataset.searchTerm);
+      elements.publicSearch.focus();
+    }
+  });
 }

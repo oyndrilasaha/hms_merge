@@ -541,5 +541,23 @@ test('T-CHAT-01: care assistant chatbot drawer is served in the layout and bundl
   assert.match(appJs.text, /getAssistantReply/);
 });
 
+test('T-PUBLIC-01: public hospital homepage, doctor directory and portal gateway are served', async (t) => {
+  const { request } = await startTestServer(t);
+  
+  const index = await request('/');
+  assert.equal(index.status, 200);
+  assert.match(index.text, /id="public-portal"/);
+  assert.match(index.text, /id="public-search"/);
+  assert.match(index.text, /Dr\. Daniel Chen/);
+  assert.match(index.text, /MBBS \(Hons\), FRACP, FCSANZ/);
+  assert.match(index.text, /id="portal-toggle"/);
+  assert.match(index.text, /id="back-to-home"/);
+
+  const appJs = await request('/app.js');
+  assert.match(appJs.text, /showPublicPortal/);
+  assert.match(appJs.text, /initPublicSearch/);
+});
+
+
 
 

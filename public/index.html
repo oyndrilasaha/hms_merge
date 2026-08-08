@@ -32,8 +32,388 @@
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-  <main id="login-view" class="login-view">
+  <!-- Public Hospital Website Portal -->
+  <div id="public-portal" class="public-portal">
+    <!-- Public Sticky Header -->
+    <header class="public-header">
+      <div class="public-container public-header-inner">
+        <a class="brand-lockup brand-lockup--public" href="#home" aria-label="St George Hospital Home">
+          <span class="brand-mark" aria-hidden="true"><svg><use href="#icon-cross"></use></svg></span>
+          <span><strong>St George Hospital</strong><small>Kogarah & Sydney • Caring since 1894</small></span>
+        </a>
+        <nav class="public-nav" aria-label="Public Navigation">
+          <a href="#services" class="public-nav-link">Specialties & Services</a>
+          <a href="#doctors" class="public-nav-link">Senior Doctors</a>
+          <a href="#amenities" class="public-nav-link">Perks & Amenities</a>
+          <a href="#locations" class="public-nav-link">Locations & Hours</a>
+        </nav>
+        <div class="public-header-actions">
+          <button id="portal-toggle" class="button button--primary public-portal-btn" type="button">
+            <svg aria-hidden="true" style="width: 16px; height: 16px; fill: currentColor; margin-right: 6px;"><use href="#icon-shield"></use></svg>
+            <span>Staff & Patient Portal</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Emergency & Visiting Hours Alert Bar -->
+    <div class="emergency-bar">
+      <div class="public-container emergency-bar-inner">
+        <div class="emergency-badge"><span class="pulse-dot"></span> 24/7 Level 1 Emergency Open</div>
+        <div class="visiting-hours-info">General Visiting Hours: <strong>10:00 AM – 8:00 PM Daily</strong></div>
+        <div class="emergency-contact">Emergency Triage: <a href="tel:0291131111"><strong>(02) 9113 1111</strong></a></div>
+      </div>
+    </div>
+
+    <!-- Hero Section with Live Search -->
+    <section id="home" class="public-hero">
+      <div class="public-container public-hero-inner">
+        <div class="hero-content">
+          <span class="hero-badge">NSW Health Accredited Tertiary Teaching Hospital</span>
+          <h1 class="hero-title">World-Class Medicine.<br>Compassionate Care.</h1>
+          <p class="hero-subtitle">
+            Providing leading clinical treatments, advanced surgical specialties, accredited diagnostics, and 24/7 trauma emergency care across southern Sydney and New South Wales.
+          </p>
+          
+          <!-- Live Instant Search Bar -->
+          <div class="hero-search-box">
+            <div class="search-input-wrapper">
+              <svg class="search-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
+              <input id="public-search" type="search" placeholder="Search clinical specialties, doctors, qualifications, working hours, or amenities..." aria-label="Search hospital services and doctors" autocomplete="off">
+            </div>
+            <div id="search-quick-tags" class="search-quick-tags">
+              <span>Popular searches:</span>
+              <button type="button" data-search-term="Cardiology">Cardiology</button>
+              <button type="button" data-search-term="Trauma">24/7 Trauma</button>
+              <button type="button" data-search-term="Dr Daniel Chen">Dr Daniel Chen</button>
+              <button type="button" data-search-term="MBBS">Specialists (MBBS)</button>
+              <button type="button" data-search-term="Parking">On-site Parking</button>
+            </div>
+          </div>
+
+          <div class="hero-cta-group">
+            <button id="hero-portal-btn" class="button button--primary hero-primary-btn" type="button">
+              <span>Access Secure HMS Workspace</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <a href="#services" class="button button--secondary hero-secondary-btn">Explore Clinical Departments</a>
+          </div>
+
+          <div class="hero-stats-grid">
+            <div class="hero-stat-card">
+              <strong>600+</strong>
+              <span>Hospital Inpatient Beds</span>
+            </div>
+            <div class="hero-stat-card">
+              <strong>24/7</strong>
+              <span>Level 1 Adult Trauma</span>
+            </div>
+            <div class="hero-stat-card">
+              <strong>50+</strong>
+              <span>Specialized Departments</span>
+            </div>
+            <div class="hero-stat-card">
+              <strong>2 Campuses</strong>
+              <span>Kogarah & Sydney CBD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Clinical Specialties & Departments -->
+    <section id="services" class="public-section">
+      <div class="public-container">
+        <div class="section-header">
+          <span class="section-eyebrow">Excellence in Clinical Care</span>
+          <h2>Specializations & Clinical Services</h2>
+          <p>Comprehensive specialized medicine and interdisciplinary teams supporting patients at every stage of recovery.</p>
+        </div>
+
+        <div id="services-grid" class="public-cards-grid">
+          <article class="specialty-card" data-search-content="cardiology cardiothoracic heart cardiac echocardiography catheterization surgery vascular">
+            <div class="specialty-icon"><svg><use href="#icon-clinical"></use></svg></div>
+            <h3>Cardiology & Cardiothoracic Surgery</h3>
+            <p>State-of-the-art cardiac catheterization laboratories, coronary care units, pacemaker implantation, and complex heart valve surgeries.</p>
+            <ul class="specialty-tags">
+              <li>Open Heart Unit</li>
+              <li>Echocardiography</li>
+              <li>24/7 STEMI Protocol</li>
+            </ul>
+          </article>
+
+          <article class="specialty-card" data-search-content="emergency trauma resuscitation critical care triage intensive acute 24/7">
+            <div class="specialty-icon"><svg><use href="#icon-cross"></use></svg></div>
+            <h3>Emergency Medicine & Level 1 Trauma</h3>
+            <p>Designated major adult trauma referral centre equipped with advanced resuscitation bays, dedicated trauma teams, and rapid surgical access.</p>
+            <ul class="specialty-tags">
+              <li>24/7 Fast Triage</li>
+              <li>Helipad Access</li>
+              <li>Major Trauma Team</li>
+            </ul>
+          </article>
+
+          <article class="specialty-card" data-search-content="oncology cancer chemotherapy radiation haematology hematology clinical trials">
+            <div class="specialty-icon"><svg><use href="#icon-shield"></use></svg></div>
+            <h3>Oncology & Clinical Hematology</h3>
+            <p>Holistic cancer care comprising medical oncology, targeted chemotherapy infusions, radiation oncology, hematological stem cell therapy, and trials.</p>
+            <ul class="specialty-tags">
+              <li>Infusion Suites</li>
+              <li>Clinical Trials</li>
+              <li>Multidisciplinary Care</li>
+            </ul>
+          </article>
+
+          <article class="specialty-card" data-search-content="orthopedics orthopaedics joint replacement sports bone fracture musculoskeletal arthroplasty">
+            <div class="specialty-icon"><svg><use href="#icon-grid"></use></svg></div>
+            <h3>Orthopedics & Musculoskeletal Rehab</h3>
+            <p>Pioneering robotic joint replacement surgery, spinal trauma reconstruction, pediatric orthopedic clinics, and dedicated physiotherapy wards.</p>
+            <ul class="specialty-tags">
+              <li>Joint Replacement</li>
+              <li>Sports Surgery</li>
+              <li>Fast-Track Rehab</li>
+            </ul>
+          </article>
+
+          <article class="specialty-card" data-search-content="maternity obstetrics gynaecology gynecology birth pregnancy newborn nursery prenatal">
+            <div class="specialty-icon"><svg><use href="#icon-users"></use></svg></div>
+            <h3>Maternity & Women's Health</h3>
+            <p>Modern birthing suites, maternal-fetal medicine clinics, special care nursery for neonates, and comprehensive post-natal support services.</p>
+            <ul class="specialty-tags">
+              <li>Private Birthing Suites</li>
+              <li>Neonatal Special Care</li>
+              <li>Prenatal Education</li>
+            </ul>
+          </article>
+
+          <article class="specialty-card" data-search-content="neurology neurosurgery stroke brain epilepsy spine neurology neurovascular">
+            <div class="specialty-icon"><svg><use href="#icon-clinical"></use></svg></div>
+            <h3>Neurology & Neurosurgery</h3>
+            <p>Nationally recognized acute stroke unit with endovascular thrombectomy, video EEG epilepsy monitoring, and brain tumor microsurgery.</p>
+            <ul class="specialty-tags">
+              <li>Rapid Stroke Unit</li>
+              <li>Epilepsy Monitoring</li>
+              <li>Stereotactic Surgery</li>
+            </ul>
+          </article>
+
+          <article class="specialty-card" data-search-content="pathology laboratory blood tests biochemistry microbiology hematology blood diagnostic">
+            <div class="specialty-icon"><svg><use href="#icon-search"></use></svg></div>
+            <h3>Diagnostic Pathology & Laboratory</h3>
+            <p>NATA-accredited 24-hour pathology laboratory executing full-spectrum hematology, clinical biochemistry, microbiology, and molecular genetics.</p>
+            <ul class="specialty-tags">
+              <li>NATA Accredited</li>
+              <li>Digital Results Sync</li>
+              <li>Rapid Blood Bank</li>
+            </ul>
+          </article>
+
+          <article class="specialty-card" data-search-content="pharmacy medications dispensary prescription clinical therapeutics compounding">
+            <div class="specialty-icon"><svg><use href="#icon-pill"></use></svg></div>
+            <h3>Clinical Pharmacy & Therapeutics</h3>
+            <p>Specialist hospital pharmacy providing sterile chemotherapy compounding, clinical pharmacist ward consultations, and patient discharge counseling.</p>
+            <ul class="specialty-tags">
+              <li>Specialist Compounding</li>
+              <li>Discharge Counseling</li>
+              <li>Barcode Dispensing</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Meet Our Senior Doctors & Specialists -->
+    <section id="doctors" class="public-section public-section--alt">
+      <div class="public-container">
+        <div class="section-header">
+          <span class="section-eyebrow">Medical Leadership</span>
+          <h2>Senior Doctors & Specialist Directory</h2>
+          <p>Meet our credentialed department heads, consultant physicians, and leading surgeons dedicated to your care.</p>
+        </div>
+
+        <div id="doctors-grid" class="public-cards-grid public-cards-grid--doctors">
+          <article class="doctor-card" data-search-content="dr daniel chen cardiologist cardiology mbbs fracp fcsanz monday tuesday wednesday thursday 08:30 16:30">
+            <div class="doctor-avatar">DC</div>
+            <div class="doctor-info">
+              <div class="doctor-role-tag">Director of Cardiology</div>
+              <h3>Dr. Daniel Chen</h3>
+              <p class="doctor-qualifications"><strong>Qualifications:</strong> MBBS (Hons), FRACP, FCSANZ, MD (Sydney)</p>
+              <p class="doctor-specialty"><strong>Specialty:</strong> Interventional Cardiology & Structural Heart Disease</p>
+              <div class="doctor-hours">
+                <svg><use href="#icon-calendar"></use></svg>
+                <span><strong>Consultation Hours:</strong> Mon – Thu: 08:30 – 16:30 • On-call Trauma</span>
+              </div>
+              <p class="doctor-bio">Over 18 years of clinical expertise in acute coronary interventions, transcatheter aortic valve implantation (TAVI), and heart failure clinical trials.</p>
+            </div>
+          </article>
+
+          <article class="doctor-card" data-search-content="dr krishala niroula chief surgeon orthopedics surgery mbbs ms ortho fracs faortha monday wednesday friday 09:00 17:00">
+            <div class="doctor-avatar" style="background: #0b5f66;">KN</div>
+            <div class="doctor-info">
+              <div class="doctor-role-tag">Chief Orthopedic Surgeon</div>
+              <h3>Dr. Krishala Niroula</h3>
+              <p class="doctor-qualifications"><strong>Qualifications:</strong> MBBS, MS (Ortho), FRACS, FAOrthoA</p>
+              <p class="doctor-specialty"><strong>Specialty:</strong> Robotic Joint Arthroplasty & Complex Trauma</p>
+              <div class="doctor-hours">
+                <svg><use href="#icon-calendar"></use></svg>
+                <span><strong>Consultation Hours:</strong> Mon, Wed, Fri: 09:00 – 17:00 • Surgery Tue/Thu</span>
+              </div>
+              <p class="doctor-bio">Specializing in minimally invasive hip and knee reconstructions, robotic navigation surgery, and orthopedic sports medicine rehabilitation.</p>
+            </div>
+          </article>
+
+          <article class="doctor-card" data-search-content="dr lucas wilson director diagnostic pathology pathology mbbs frcpa phd tuesday thursday saturday 08:00 16:00">
+            <div class="doctor-avatar" style="background: #5b21b6;">LW</div>
+            <div class="doctor-info">
+              <div class="doctor-role-tag">Director of Pathology</div>
+              <h3>Dr. Lucas Wilson</h3>
+              <p class="doctor-qualifications"><strong>Qualifications:</strong> MBBS, FRCPA, PhD (Molecular Genetics)</p>
+              <p class="doctor-specialty"><strong>Specialty:</strong> Clinical Biochemistry & Diagnostic Hematology</p>
+              <div class="doctor-hours">
+                <svg><use href="#icon-calendar"></use></svg>
+                <span><strong>Consultation Hours:</strong> Tue – Sat: 08:00 – 16:00 • 24/7 Lab Review</span>
+              </div>
+              <p class="doctor-bio">Leading our diagnostic laboratory diagnostics, rapid molecular screening programs, and digital diagnostic report integrations.</p>
+            </div>
+          </article>
+
+          <article class="doctor-card" data-search-content="dr priya paneru emergency trauma medicine lead emergency mbbs facem dip paediatrics monday tuesday wednesday thursday friday 07:00 19:00">
+            <div class="doctor-avatar" style="background: #047857;">PP</div>
+            <div class="doctor-info">
+              <div class="doctor-role-tag">Emergency Care Lead</div>
+              <h3>Dr. Priya Paneru</h3>
+              <p class="doctor-qualifications"><strong>Qualifications:</strong> MBBS, FACEM, Dip Paediatrics</p>
+              <p class="doctor-specialty"><strong>Specialty:</strong> Resuscitation & Acute Trauma Medicine</p>
+              <div class="doctor-hours">
+                <svg><use href="#icon-calendar"></use></svg>
+                <span><strong>Consultation Hours:</strong> Mon – Fri: 07:00 – 19:00 (Rotational Triage)</span>
+              </div>
+              <p class="doctor-bio">Overseeing rapid emergency triage, pediatric acute presentations, and disaster management coordination across the St George catchment.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hospital Perks & Patient Amenities -->
+    <section id="amenities" class="public-section">
+      <div class="public-container">
+        <div class="section-header">
+          <span class="section-eyebrow">Patient Experience</span>
+          <h2>Hospital Perks & Modern Amenities</h2>
+          <p>Designed for comfort, accessibility, and healing for patients, families, and visiting carers.</p>
+        </div>
+
+        <div id="amenities-grid" class="public-cards-grid">
+          <div class="perk-card" data-search-content="transit train bus transport kogarah station access shuttle drop off">
+            <div class="perk-badge">Transport</div>
+            <h3>Direct Public Transit Access</h3>
+            <p>Only a 400m sheltered walk from Kogarah Railway Station with frequent express trains to Sydney CBD, plus 5 connecting bus routes at our front entrance.</p>
+          </div>
+
+          <div class="perk-card" data-search-content="parking multi storey underground vehicle car concession rates disabled bays">
+            <div class="perk-badge">Parking</div>
+            <h3>Multi-Storey On-Site Parking</h3>
+            <p>Safe underground parking with 800+ spaces, electric vehicle charging bays, direct elevator access to all wards, and subsidized patient concession rates.</p>
+          </div>
+
+          <div class="perk-card" data-search-content="telehealth digital portal online records lab reports e-invoices print pwa mobile">
+            <div class="perk-badge">Digital Health</div>
+            <h3>Integrated Patient Portal & PWA</h3>
+            <p>Access your synthetic lab reports, digital tax invoices, scheduled clinical notes, and CSV records from any desktop or mobile device 24/7.</p>
+          </div>
+
+          <div class="perk-card" data-search-content="wellness hydrotherapy rehabilitation pool physiotherapy gym recovery">
+            <div class="perk-badge">Rehabilitation</div>
+            <h3>Hydrotherapy & Wellness Suites</h3>
+            <p>Heated therapeutic hydrotherapy pool and state-of-the-art physiotherapy gym for post-operative recovery, musculoskeletal rehab, and mobility restoration.</p>
+          </div>
+
+          <div class="perk-card" data-search-content="gardens outdoor cafe cafeteria healing fresh air green spaces terrace">
+            <div class="perk-badge">Environment</div>
+            <h3>Healing Gardens & Modern Cafeteria</h3>
+            <p>Landscaped open-air healing gardens, private quiet reflection rooms, and a modern cafeteria offering healthy, chef-prepared dietary meals and barista coffee.</p>
+          </div>
+
+          <div class="perk-card" data-search-content="interpreter language translation indigenous cultural support 24/7 multi-lingual">
+            <div class="perk-badge">Support</div>
+            <h3>24/7 Language & Cultural Care</h3>
+            <p>Accredited multi-lingual medical interpreters available in 40+ languages, along with dedicated Aboriginal and Torres Strait Islander health liaison officers.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Branch Locations & Contacts -->
+    <section id="locations" class="public-section public-section--alt">
+      <div class="public-container">
+        <div class="section-header">
+          <span class="section-eyebrow">Our Campuses</span>
+          <h2>Locations & Immediate Contacts</h2>
+          <p>Serving patients through our flagship hospital campus and specialized community clinical branch.</p>
+        </div>
+
+        <div class="locations-grid">
+          <div class="location-card">
+            <div class="location-tag">Main Hospital Campus (Code: KOG)</div>
+            <h3>St George Hospital – Kogarah</h3>
+            <p class="location-address">📍 Gray Street, Kogarah NSW 2217, Australia</p>
+            <p class="location-phone">📞 Phone: <strong>(02) 9113 1111</strong></p>
+            <p class="location-details">Major tertiary campus, 24/7 Emergency & Trauma, Inpatient Surgical Wards, Birthing Suites, Intensive Care Unit, and Pathology Labs.</p>
+          </div>
+
+          <div class="location-card">
+            <div class="location-tag">Specialist Community Branch (Code: SYD)</div>
+            <h3>St George Community Clinic – Sydney CBD</h3>
+            <p class="location-address">📍 100 George Street, Sydney NSW 2000, Australia</p>
+            <p class="location-phone">📞 Phone: <strong>(02) 9000 2026</strong></p>
+            <p class="location-details">Outpatient specialist consultations, telehealth hubs, diagnostic specimen collection, physical therapy, and prescription dispense pickup.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Public Footer -->
+    <footer class="public-footer">
+      <div class="public-container public-footer-inner">
+        <div class="footer-brand">
+          <div class="brand-lockup brand-lockup--public">
+            <span class="brand-mark" aria-hidden="true"><svg><use href="#icon-cross"></use></svg></span>
+            <span><strong>St George Hospital</strong><small>Hospital Management System</small></span>
+          </div>
+          <p>Providing high-reliability, patient-centered clinical care and academic health sciences excellence across New South Wales.</p>
+        </div>
+        <div class="footer-links-col">
+          <h4>Clinical Services</h4>
+          <a href="#services">Cardiology & Heart Care</a>
+          <a href="#services">Level 1 Emergency Trauma</a>
+          <a href="#services">Oncology & Chemotherapy</a>
+          <a href="#services">Orthopedics & Surgery</a>
+        </div>
+        <div class="footer-links-col">
+          <h4>Portal & Accounts</h4>
+          <a href="#home" class="trigger-portal-link">Staff & Patient Login</a>
+          <a href="#amenities">Patient Portal Benefits</a>
+          <a href="#doctors">Consultant Directory</a>
+          <a href="#locations">Campus Locations</a>
+        </div>
+        <div class="footer-links-col">
+          <h4>Compliance & Standards</h4>
+          <p>NSW Health Governance Framework</p>
+          <p>Australian Commission on Safety & Quality</p>
+          <p>Synthetic Data Training Prototype</p>
+        </div>
+      </div>
+      <div class="public-container footer-bottom">
+        <p>© 2026 St George Hospital Management System (HMS). All rights reserved. Built for Kent Institute Capstone CPRO306.</p>
+      </div>
+    </footer>
+  </div>
+
+  <main id="login-view" class="login-view" hidden>
     <section class="login-panel" aria-labelledby="login-title">
+      <button id="back-to-home" class="text-button back-to-home-btn" type="button">← Back to Hospital Website</button>
       <div class="brand-lockup brand-lockup--login">
         <span class="brand-mark" aria-hidden="true"><svg><use href="#icon-cross"></use></svg></span>
         <span><strong>St George</strong><small>Hospital Management System</small></span>
