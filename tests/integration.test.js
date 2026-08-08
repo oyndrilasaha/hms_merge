@@ -463,3 +463,81 @@ test('T-PWA-01: static shell, manifest, worker and icons are served with securit
   assert.equal(icon.status, 200);
   assert.match(icon.response.headers.get('content-type'), /image\//);
 });
+
+test('T-PAT-02: modify patient details via PATCH /api/patients/:id', async (t) => {
+  const { login, request } = await startTestServer(t);
+  const reception = await login('reception');
+
+  // Modify patient 1 details
+  const updateRes = await request('/api/patients/1', {
+    method: 'PATCH',
+    session: reception,
+    json: {
+      phone: '0499 999 999',
+      allergies: 'Peanuts and Gluten'
+    }
+  });
+  assert.equal(updateRes.status, 200);
+  assert.equal(updateRes.payload.data.phone, '0499 999 999');
+  assert.equal(updateRes.payload.data.allergies, 'Peanuts and Gluten');
+
+  // Verify updates persist
+  const listRes = await request('/api/patients', { session: reception });
+  const patient1 = listRes.payload.data.items.find(p => p.id === 1);
+  assert.equal(patient1.phone, '0499 999 999');
+  assert.equal(patient1.allergies, 'Peanuts and Gluten');
+});
+
+test('T-APT-03: modify/cancel appointment via PATCH /api/appointments/:id', async (t) => {
+  const { login, request } = await startTestServer(t);
+  const reception = await login('reception');
+
+  // Attempt to cancel without cancellation reason -> should fail with 400
+  const failRes = await request('/api/appointments/1', {
+    method: 'PATCH',
+    session: reception,
+    json: {
+      status: 'Cancelled'
+    }
+  });
+  assertApiError(failRes, 400, 'VALIDATION_ERROR');
+
+  // Cancel with cancellation reason -> should succeed
+  const cancelRes = await request('/api/appointments/1', {
+    method: 'PATCH',
+    session: reception,
+    json: {
+      status: 'Cancelled',
+      cancellationReason: 'Patient requested reschedule'
+    }
+  });
+  assert.equal(cancelRes.status, 200);
+  assert.equal(cancelRes.payload.data.status, 'Cancelled');
+
+  // Verify updates persist
+  const listRes = await request('/api/appointments', { session: reception });
+  const apt1 = listRes.payload.data.items.find(a => a.id === 1);
+  assert.equal(apt1.status, 'Cancelled');
+});
+
+test('T-EXPORT-01: CSV export frontend markup and button exist in toolbar helper', async (t) => {
+  const { request } = await startTestServer(t);
+  const appJs = await request('/app.js');
+  assert.equal(appJs.status, 200);
+  assert.match(appJs.text, /data-export-csv/);
+  assert.match(appJs.text, /exportToCSV/);
+});
+
+test('T-CHAT-01: care assistant chatbot drawer is served in the layout and bundle', async (t) => {
+  const { request } = await startTestServer(t);
+  const index = await request('/');
+  assert.match(index.text, /id="chat-widget"/);
+  assert.match(index.text, /id="chat-drawer"/);
+
+  const appJs = await request('/app.js');
+  assert.match(appJs.text, /initChatbot/);
+  assert.match(appJs.text, /getAssistantReply/);
+});
+
+
+

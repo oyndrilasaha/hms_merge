@@ -27,6 +27,7 @@
     <symbol id="icon-search" viewBox="0 0 24 24"><path d="M10.5 3a7.5 7.5 0 1 1-4.7 13.3L2 20.1 3.9 22l3.8-3.8A7.5 7.5 0 0 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"/></symbol>
     <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m8 9 4 4 4-4 1.5 1.5L12 16l-5.5-5.5L8 9Z"/></symbol>
     <symbol id="icon-logout" viewBox="0 0 24 24"><path d="M4 3h9v2H6v14h7v2H4V3Zm13 4 5 5-5 5-1.4-1.4 2.6-2.6H10v-2h8.2l-2.6-2.6L17 7Z"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M19.4 13l-1.4-1.4-5 5V3h-2v13.6l-5-5-1.4 1.4 7.4 7.4 7.4-7.4zM3 21h18v-2H3v2z"/></symbol>
   </svg>
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
@@ -148,6 +149,37 @@
       </div>
       <section id="page-content" aria-live="polite" aria-busy="false"></section>
     </main>
+
+    <!-- Interactive Chatbot Assistant -->
+    <div id="chat-widget" class="chat-widget">
+      <button id="chat-toggle" class="chat-toggle-btn" type="button" aria-label="Open care assistant">
+        <svg><use href="#icon-clinical"></use></svg>
+      </button>
+      <div id="chat-drawer" class="chat-drawer" hidden>
+        <header class="chat-header">
+          <div>
+            <h3>Care Assistant</h3>
+            <p>St George HMS Guide</p>
+          </div>
+          <button id="chat-close" class="chat-close-btn" type="button" aria-label="Close assistant">×</button>
+        </header>
+        <div id="chat-messages" class="chat-messages">
+          <div class="chat-msg chat-msg--assistant">
+            <p>Hello! I am your St George Care Assistant. I can help guide you through patients, appointments, billing, or clinical workflows. Select a topic or ask a question below!</p>
+          </div>
+          <div class="chat-suggestions">
+            <button class="chat-suggestion-chip" type="button">How do I register a patient?</button>
+            <button class="chat-suggestion-chip" type="button">How do I cancel an appointment?</button>
+            <button class="chat-suggestion-chip" type="button">Who can record clinical notes?</button>
+            <button class="chat-suggestion-chip" type="button">How can I export CSV data?</button>
+          </div>
+        </div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" type="text" placeholder="Type a message..." autocomplete="off" required>
+          <button class="button button--primary" type="submit" style="padding: 0 12px; height: 36px; min-height: 36px; font-size: 13px;">Send</button>
+        </form>
+      </div>
+    </div>
   </div>
 
   <dialog id="record-dialog" class="record-dialog" aria-labelledby="dialog-title">

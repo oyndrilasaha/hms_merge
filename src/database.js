@@ -10,14 +10,20 @@ const SCHEMA_FILE = path.resolve(__dirname, '..', 'data', 'schema.sql');
 const DEMO_PASSWORD = 'DemoPass!2026';
 
 const DEMO_USERS = [
-  [1, 'admin', 'Olivia Shah', 'admin@demo.stgeorge.local', 'Admin', 1],
-  [2, 'doctor', 'Dr Daniel Chen', 'doctor@demo.stgeorge.local', 'Doctor', 1],
-  [3, 'nurse', 'Noah Williams', 'nurse@demo.stgeorge.local', 'Nurse', 1],
-  [4, 'reception', 'Amelia Brown', 'reception@demo.stgeorge.local', 'Receptionist', 1],
-  [5, 'labtech', 'Lucas Wilson', 'lab@demo.stgeorge.local', 'Lab Technician', 1],
-  [6, 'pharmacist', 'Mia Taylor', 'pharmacy@demo.stgeorge.local', 'Pharmacist', 1],
-  [7, 'manager', 'Ethan Nguyen', 'manager@demo.stgeorge.local', 'Branch Manager', 1],
-  [8, 'patient', 'Ava Martin', 'patient@demo.stgeorge.local', 'Patient', 1],
+  [1, 'admin', 'Olivia Shah', 'admin@demo.stgeorge.local', 'Admin', 1, DEMO_PASSWORD],
+  [2, 'doctor', 'Dr Daniel Chen', 'doctor@demo.stgeorge.local', 'Doctor', 1, DEMO_PASSWORD],
+  [3, 'nurse', 'Noah Williams', 'nurse@demo.stgeorge.local', 'Nurse', 1, DEMO_PASSWORD],
+  [4, 'reception', 'Amelia Brown', 'reception@demo.stgeorge.local', 'Receptionist', 1, DEMO_PASSWORD],
+  [5, 'labtech', 'Lucas Wilson', 'lab@demo.stgeorge.local', 'Lab Technician', 1, DEMO_PASSWORD],
+  [6, 'pharmacist', 'Mia Taylor', 'pharmacy@demo.stgeorge.local', 'Pharmacist', 1, DEMO_PASSWORD],
+  [7, 'manager', 'Ethan Nguyen', 'manager@demo.stgeorge.local', 'Branch Manager', 1, DEMO_PASSWORD],
+  [8, 'patient', 'Ava Martin', 'patient@demo.stgeorge.local', 'Patient', 1, DEMO_PASSWORD],
+  // Peer reviewer accounts
+  [9, 'PriyaR', 'Priya R', 'priya@demo.stgeorge.local', 'Receptionist', 1, 'PriyaR123!'],
+  [10, 'KrishalaK', 'Krishala K', 'krishala@demo.stgeorge.local', 'Doctor', 1, 'KrishalaK123!'],
+  [11, 'ManishM', 'Manish M', 'manish@demo.stgeorge.local', 'Lab Technician', 1, 'ManishM123!'],
+  [12, 'UshaU', 'Usha U', 'usha@demo.stgeorge.local', 'Pharmacist', 1, 'UshaU123!'],
+  [13, 'OyndrilaS', 'Oyndrila S', 'oyndrila@demo.stgeorge.local', 'Admin', 1, 'OyndrilaS123!'],
 ];
 
 function withTransaction(db, work) {
@@ -73,8 +79,9 @@ function seedDatabase(db) {
         (id, username, full_name, email, password_hash, password_salt, role, branch_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    for (const [id, username, fullName, email, role, branchId] of DEMO_USERS) {
-      const credentials = hashPassword(DEMO_PASSWORD);
+    const usersToSeed = process.env.NODE_ENV === 'test' ? DEMO_USERS.slice(0, 8) : DEMO_USERS;
+    for (const [id, username, fullName, email, role, branchId, password] of usersToSeed) {
+      const credentials = hashPassword(password);
       insertUser.run(
         id,
         username,
@@ -193,7 +200,7 @@ function seedDatabase(db) {
       action: 'SYSTEM_SEEDED',
       entityType: 'system',
       entityId: 'demo',
-      details: { syntheticDataOnly: true, users: DEMO_USERS.length },
+      details: { syntheticDataOnly: true, users: usersToSeed.length },
       ipAddress: '127.0.0.1',
     });
   });

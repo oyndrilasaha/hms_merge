@@ -1579,3 +1579,348 @@ textarea[aria-invalid="true"] {
     break-inside: avoid;
   }
 }
+
+/* Custom Print Layouts for Invoices & Clinical Case Notes */
+@media print {
+  body.printing-mode > * {
+    display: none !important;
+  }
+  body.printing-mode #print-area {
+    display: block !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  #print-area {
+    padding: 30px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .print-header {
+    border-bottom: 2px solid #222;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .print-header h1 {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0;
+    color: #111;
+  }
+  .print-header p {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: #666;
+  }
+  .print-title {
+    font-size: 26px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #222;
+    margin: 0;
+    text-align: right;
+  }
+  .print-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+  }
+  .print-card h3 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #666;
+    letter-spacing: 0.8px;
+    margin: 0 0 8px 0;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+  }
+  .print-card p {
+    font-size: 14px;
+    margin: 4px 0;
+    color: #111;
+    line-height: 1.4;
+  }
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 40px;
+  }
+  .print-table th {
+    border-bottom: 2px solid #333;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 8px 4px;
+    color: #333;
+  }
+  .print-table td {
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    padding: 10px 4px;
+    color: #111;
+  }
+  .print-table tr.total-row td {
+    border-top: 2px solid #333;
+    border-bottom: 0;
+    font-weight: bold;
+    font-size: 15px;
+    padding-top: 12px;
+  }
+  .print-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border: 1.5px solid #222;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .print-clinical-section {
+    margin-bottom: 24px;
+  }
+  .print-clinical-section h4 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0 0 6px 0;
+    color: #555;
+    letter-spacing: 0.5px;
+  }
+  .print-clinical-section p {
+    font-size: 14px;
+    margin: 0;
+    color: #111;
+    line-height: 1.5;
+    background: #fdfdfd;
+    padding: 8px;
+    border-left: 2px solid #ccc;
+  }
+  .print-footer {
+    border-top: 1px solid #ddd;
+    margin-top: 60px;
+    padding-top: 20px;
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+  }
+}
+
+/* Floating Chatbot Assistant Styling */
+.chat-widget {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: var(--font-family);
+}
+
+.chat-toggle-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0055cc;
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 85, 204, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.chat-toggle-btn:hover {
+  transform: scale(1.05);
+  background: #0044aa;
+}
+
+.chat-toggle-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.chat-drawer {
+  width: 350px;
+  height: 480px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-bottom: 15px;
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.chat-header {
+  background: #1e293b;
+  color: #fff;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.chat-header p {
+  margin: 2px 0 0 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.chat-close-btn {
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.8;
+  padding: 4px;
+  line-height: 1;
+}
+
+.chat-close-btn:hover {
+  opacity: 1;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+.chat-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.chat-msg--assistant {
+  background: #fff;
+  color: #1e293b;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.chat-msg--user {
+  background: #0055cc;
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+.chat-suggestion-chip {
+  background: #e2e8f0;
+  color: #334155;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.chat-suggestion-chip:hover {
+  background: #cbd5e1;
+}
+
+.chat-form {
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 15px;
+  display: flex;
+  gap: 8px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.chat-form input {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.chat-form input:focus {
+  border-color: #0055cc;
+}
+
+/* Typing indicator */
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: #64748b;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite both;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+

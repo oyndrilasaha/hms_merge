@@ -347,6 +347,113 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     sendData(res, camelize(appointment), 201);
   }
 
+  async function updatePatient(req, res, session, patientId) {
+    requireRole(req, session, ['Admin', 'Receptionist', 'Branch Manager']);
+    const body = await readJson(req);
+    const patient = rowOr404(db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId), 'Patient');
+    patientForSession(session, patient.id);
+
+    const firstName = stringField(body, 'firstName', { min: 1, max: 100, label: 'First name' }) || patient.first_name;
+    const lastName = stringField(body, 'lastName', { min: 1, max: 100, label: 'Last name' }) || patient.last_name;
+    const dateOfBirth = body.dateOfBirth ? dateField(body, 'dateOfBirth', { label: 'Date of birth' }) : patient.date_of_birth;
+    if (dateOfBirth && new Date(dateOfBirth) > new Date()) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Date of birth cannot be in the future.', { field: 'dateOfBirth' });
+    }
+    const submittedGender = body.gender;
+    const gender = submittedGender
+      ? enumField({ gender: submittedGender }, 'gender', GENDERS, { label: 'Gender' })
+      : patient.gender;
+    const phone = stringField(body, 'phone', { max: 40, label: 'Phone' }) || patient.phone;
+    const email = body.email !== undefined ? (body.email ? emailField(body, 'email') : null) : patient.email;
+    const address = stringField(body, 'address', { max: 300, label: 'Address' }) || patient.address;
+    const emergencyContact = stringField(body, 'emergencyContact', { max: 200, label: 'Emergency contact' }) || patient.emergency_contact;
+    const allergies = stringField(body, 'allergies', { max: 500, label: 'Allergies' }) || patient.allergies;
+
+    const updated = withTransaction(db, () => {
+      db.prepare(`
+        UPDATE patients
+        SET first_name = ?, last_name = ?, date_of_birth = ?, gender = ?, phone = ?, email = ?, address = ?, emergency_contact = ?, allergies = ?, updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+        WHERE id = ?
+      `).run(firstName, lastName, dateOfBirth, gender, phone, email, address, emergencyContact, allergies, patientId);
+      log(req, session, 'PATIENT_UPDATED', 'patient', patientId, { branchId: patient.branch_id });
+      return db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId);
+    });
+    sendData(res, camelize(updated), 200);
+  }
+
+  async function updateAppointment(req, res, session, appointmentId) {
+    requireRole(req, session, ['Admin', 'Receptionist', 'Branch Manager', 'Doctor', 'Patient']);
+    const body = await readJson(req);
+    const appointment = rowOr404(db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointmentId), 'Appointment');
+    
+    if (session.role === 'Patient' && appointment.patient_id !== session.patient_id) {
+      throw new ApiError(403, 'FORBIDDEN', 'You do not have permission to modify this appointment.');
+    }
+    
+    const patient = patientForSession(session, appointment.patient_id);
+
+    const status = body.status ? enumField(body, 'status', ['Scheduled', 'Checked In', 'In Progress', 'Completed', 'Cancelled', 'No Show'], { label: 'Status' }) : appointment.status;
+    const startsAt = body.startsAt ? dateField(body, 'startsAt', { label: 'Start time' }) : appointment.starts_at;
+    const endsAt = body.endsAt ? dateField(body, 'endsAt', { label: 'End time' }) : appointment.ends_at;
+    const doctorUserId = body.doctorUserId ? integerField(body, 'doctorUserId', { label: 'Doctor' }) : appointment.doctor_user_id;
+    const reason = body.reason ? stringField(body, 'reason', { min: 2, max: 300, label: 'Reason' }) : appointment.reason;
+    const notes = body.notes !== undefined ? stringField(body, 'notes', { max: 1000, label: 'Notes' }) : appointment.notes;
+    
+    const cancellationReason = stringField(body, 'cancellationReason', { max: 500, label: 'Cancellation reason' });
+    if (status === 'Cancelled' && appointment.status !== 'Cancelled' && !cancellationReason) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'A cancellation reason is required to cancel an appointment.', { field: 'cancellationReason' });
+    }
+
+    if (startsAt && endsAt && endsAt <= startsAt) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'End time must be after start time.', { field: 'endsAt' });
+    }
+    if (startsAt && endsAt && new Date(endsAt) - new Date(startsAt) > 8 * 60 * 60 * 1000) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'An appointment cannot exceed eight hours.', { field: 'endsAt' });
+    }
+
+    if (doctorUserId !== appointment.doctor_user_id) {
+      const doctor = rowOr404(db.prepare(`
+        SELECT id, branch_id FROM users WHERE id = ? AND role = 'Doctor' AND active = 1
+      `).get(doctorUserId), 'Doctor');
+      if (doctor.branch_id !== appointment.branch_id) {
+        throw new ApiError(400, 'BRANCH_MISMATCH', 'The selected doctor does not work at this branch.');
+      }
+    }
+
+    const updated = withTransaction(db, () => {
+      if (status !== 'Cancelled' && status !== 'No Show' &&
+          (startsAt !== appointment.starts_at || endsAt !== appointment.ends_at || doctorUserId !== appointment.doctor_user_id)) {
+        const conflict = db.prepare(`
+          SELECT id, starts_at, ends_at FROM appointments
+          WHERE doctor_user_id = ?
+            AND id != ?
+            AND status NOT IN ('Cancelled', 'No Show')
+            AND starts_at < ? AND ends_at > ?
+          LIMIT 1
+        `).get(doctorUserId, appointmentId, endsAt, startsAt);
+        if (conflict) {
+          throw new ApiError(409, 'APPOINTMENT_CONFLICT', 'The doctor already has an appointment during this time.');
+        }
+      }
+
+      db.prepare(`
+        UPDATE appointments
+        SET status = ?, starts_at = ?, ends_at = ?, doctor_user_id = ?, reason = ?, notes = ?, updated_at = (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+        WHERE id = ?
+      `).run(status, startsAt, endsAt, doctorUserId, reason, notes, appointmentId);
+
+      log(req, session, 'APPOINTMENT_UPDATED', 'appointment', appointmentId, {
+        status,
+        cancellationReason: cancellationReason || null,
+        branchId: appointment.branch_id,
+      });
+
+      return db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointmentId);
+    });
+
+    sendData(res, camelize(updated), 200);
+  }
+
   function getClinicalNotes(req, res, url, session) {
     requireRole(req, session, ['Admin', 'Doctor', 'Nurse', 'Patient']);
     const conditions = [];
@@ -1040,12 +1147,22 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
       await createPatient(req, res, session);
       return true;
     }
+    const patientMatch = url.pathname.match(/^\/api\/patients\/(\d+)$/);
+    if (patientMatch && req.method === 'PATCH') {
+      await updatePatient(req, res, session, Number(patientMatch[1]));
+      return true;
+    }
     if (req.method === 'GET' && url.pathname === '/api/appointments') {
       getAppointments(req, res, url, session);
       return true;
     }
     if (req.method === 'POST' && url.pathname === '/api/appointments') {
       await createAppointment(req, res, session);
+      return true;
+    }
+    const appointmentMatch = url.pathname.match(/^\/api\/appointments\/(\d+)$/);
+    if (appointmentMatch && req.method === 'PATCH') {
+      await updateAppointment(req, res, session, Number(appointmentMatch[1]));
       return true;
     }
     if (req.method === 'GET' && url.pathname === '/api/clinical-notes') {

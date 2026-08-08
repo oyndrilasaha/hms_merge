@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.NODE_ENV = 'test';
+
 const assert = require('node:assert/strict');
 const { createApp, createServer } = require('../src/server');
 const { DEMO_PASSWORD } = require('../src/database');

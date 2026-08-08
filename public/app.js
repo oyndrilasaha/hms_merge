@@ -75,8 +75,11 @@ const ROLE_PAGES = Object.freeze({
 
 const FORM_PERMISSIONS = Object.freeze({
   patient: ['admin', 'branch_manager', 'receptionist'],
+  editPatient: ['admin', 'branch_manager', 'receptionist'],
   appointment: ['admin', 'receptionist', 'doctor', 'patient'],
+  editAppointment: ['admin', 'receptionist', 'doctor', 'patient'],
   clinicalNote: ['doctor', 'nurse'],
+  nurseObservation: ['admin', 'nurse'],
   labOrder: ['doctor', 'nurse'],
   labResult: ['admin', 'lab_technician'],
   dispense: ['admin', 'pharmacist'],
@@ -114,6 +117,7 @@ async function init() {
   bindGlobalEvents();
   updateNetworkStatus();
   registerServiceWorker();
+  initChatbot();
   await restoreSession();
 }
 
@@ -126,7 +130,9 @@ function cacheElements() {
     'main-content', 'page-eyebrow', 'page-title', 'page-description', 'page-actions',
     'page-loading', 'page-content', 'record-dialog', 'record-form', 'dialog-eyebrow',
     'dialog-title', 'dialog-description', 'dialog-fields', 'dialog-status', 'dialog-submit',
-    'dialog-close', 'dialog-cancel', 'toast-region'
+    'dialog-close', 'dialog-cancel', 'toast-region',
+    'chat-widget', 'chat-toggle', 'chat-drawer', 'chat-close',
+    'chat-messages', 'chat-form', 'chat-input'
   ];
   for (const id of ids) elements[toCamel(id)] = document.getElementById(id);
 }
@@ -355,6 +361,7 @@ function renderPageActions(page) {
   if (page === 'appointments' && canUseForm('appointment')) actions.push(actionButton('appointment', 'Book appointment'));
   if (page === 'clinical') {
     if (canUseForm('clinicalNote')) actions.push(actionButton('clinicalNote', 'Add clinical note', false));
+    if (canUseForm('nurseObservation')) actions.push(actionButton('nurseObservation', 'Record vitals / observation', false));
     if (canUseForm('labOrder')) actions.push(actionButton('labOrder', 'Create lab order'));
   }
   if (page === 'pharmacy' && canUseForm('dispense')) actions.push(actionButton('dispense', 'Dispense medication'));
@@ -454,6 +461,7 @@ function dashboardQuickActions() {
   if (canUseForm('patient')) actions.push(['patient', 'Register a patient']);
   if (canUseForm('appointment')) actions.push(['appointment', 'Book an appointment']);
   if (canUseForm('clinicalNote')) actions.push(['clinicalNote', 'Record a clinical note']);
+  if (canUseForm('nurseObservation')) actions.push(['nurseObservation', 'Record vitals / observation']);
   if (canUseForm('labOrder')) actions.push(['labOrder', 'Request a lab test']);
   if (canUseForm('dispense')) actions.push(['dispense', 'Dispense medication']);
   if (canUseForm('invoice')) actions.push(['invoice', 'Create an invoice']);
@@ -468,6 +476,7 @@ function renderPatients() {
 }
 
 function patientsTable(patients) {
+  const hasEdit = canUseForm('editPatient');
   const rows = patients.map((patient) => {
     const id = pick(patient, 'id', 'patientId', 'patient_id');
     const name = personName(patient) || `Patient ${id}`;
@@ -475,9 +484,10 @@ function patientsTable(patients) {
     const dob = pick(patient, 'dateOfBirth', 'date_of_birth', 'dob');
     const phone = pick(patient, 'phone', 'phoneNumber', 'phone_number') || '—';
     const branch = branchNameFor(pick(patient, 'branchId', 'branch_id'), pick(patient, 'branchName', 'branch_name'));
-    return `<tr data-filter-row data-search="${escapeAttribute(`${name} ${identifier} ${phone} ${branch}`.toLowerCase())}"><td><span class="cell-primary"><strong>${escapeHtml(name)}</strong><small>MRN ${escapeHtml(String(identifier))}</small></span></td><td>${escapeHtml(formatDate(dob))}</td><td>${escapeHtml(phone)}</td><td>${escapeHtml(branch || '—')}</td><td><span class="status-badge status-badge--active">Active</span></td></tr>`;
+    const editBtn = hasEdit ? `<td><button class="table-action" type="button" data-open-form="editPatient" data-record-id="${id}" data-first-name="${escapeAttribute(patient.firstName || patient.first_name || '')}" data-last-name="${escapeAttribute(patient.lastName || patient.last_name || '')}" data-date-of-birth="${escapeAttribute(dob || '')}" data-gender="${escapeAttribute(patient.gender || '')}" data-phone="${escapeAttribute(phone !== '—' ? phone : '')}" data-email="${escapeAttribute(patient.email || '')}" data-address="${escapeAttribute(patient.address || '')}" data-emergency-contact="${escapeAttribute(patient.emergencyContact || patient.emergency_contact || '')}" data-allergies="${escapeAttribute(patient.allergies || '')}">Edit</button></td>` : '';
+    return `<tr data-filter-row data-search="${escapeAttribute(`${name} ${identifier} ${phone} ${branch}`.toLowerCase())}"><td><span class="cell-primary"><strong>${escapeHtml(name)}</strong><small>MRN ${escapeHtml(String(identifier))}</small></span></td><td>${escapeHtml(formatDate(dob))}</td><td>${escapeHtml(phone)}</td><td>${escapeHtml(branch || '—')}</td><td><span class="status-badge status-badge--active">Active</span></td>${editBtn}</tr>`;
   }).join('');
-  return `<table class="data-table"><thead><tr><th scope="col">Patient</th><th scope="col">Date of birth</th><th scope="col">Phone</th><th scope="col">Branch</th><th scope="col">Status</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="data-table"><thead><tr><th scope="col">Patient</th><th scope="col">Date of birth</th><th scope="col">Phone</th><th scope="col">Branch</th><th scope="col">Status</th>${hasEdit ? '<th scope="col">Action</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderAppointments() {
@@ -488,6 +498,8 @@ function renderAppointments() {
 }
 
 function appointmentsTable(appointments, includeAction = true) {
+  const hasEdit = canUseForm('editAppointment');
+  const showActionHeader = includeAction || hasEdit;
   const rows = appointments.map((appointment) => {
     const patient = pick(appointment, 'patientName', 'patient_name') || personName(appointment.patient) || `Patient ${pick(appointment, 'patientId', 'patient_id') || ''}`;
     const clinician = pick(appointment, 'doctorName', 'doctor_name', 'clinicianName', 'clinician_name') || personName(appointment.doctor || appointment.clinician) || 'Unassigned';
@@ -495,9 +507,19 @@ function appointmentsTable(appointments, includeAction = true) {
     const status = String(pick(appointment, 'status') || 'booked').toLowerCase();
     const reason = pick(appointment, 'reason', 'appointmentReason', 'appointment_reason') || 'General consultation';
     const branch = branchNameFor(pick(appointment, 'branchId', 'branch_id'), pick(appointment, 'branchName', 'branch_name'));
-    return `<tr data-filter-row data-status="${escapeAttribute(status)}" data-date="${escapeAttribute(toDateInput(startsAt))}" data-search="${escapeAttribute(`${patient} ${clinician} ${reason} ${branch}`.toLowerCase())}"><td><span class="cell-primary"><strong>${escapeHtml(formatTime(startsAt))}</strong><small>${escapeHtml(formatDate(startsAt))}</small></span></td><td><strong>${escapeHtml(patient)}</strong></td><td>${escapeHtml(clinician)}</td><td>${escapeHtml(reason)}</td><td>${escapeHtml(branch || '—')}</td><td><span class="status-badge status-badge--${escapeAttribute(kebab(status))}">${escapeHtml(titleCase(status))}</span></td>${includeAction ? '<td><button class="table-action" type="button" data-open-form="clinicalNote">Add note</button></td>' : ''}</tr>`;
+    
+    let actions = [];
+    if (includeAction && canUseForm('clinicalNote')) {
+      actions.push(`<button class="table-action" type="button" data-open-form="clinicalNote" data-patient-id="${pick(appointment, 'patientId', 'patient_id')}" data-appointment-id="${appointment.id}">Add note</button>`);
+    }
+    if (hasEdit) {
+      actions.push(`<button class="table-action" type="button" data-open-form="editAppointment" data-record-id="${appointment.id}" data-status="${escapeAttribute(titleCase(status))}" data-doctor-user-id="${pick(appointment, 'doctorUserId', 'doctor_user_id')}" data-starts-at="${escapeAttribute(startsAt.slice(0, 16))}" data-ends-at="${escapeAttribute(pick(appointment, 'endsAt', 'ends_at').slice(0, 16))}" data-reason="${escapeAttribute(reason)}" data-notes="${escapeAttribute(pick(appointment, 'notes') || '')}">Modify</button>`);
+    }
+    const actionsCell = showActionHeader ? `<td><div class="row-actions">${actions.join(' ')}</div></td>` : '';
+    
+    return `<tr data-filter-row data-status="${escapeAttribute(status)}" data-date="${escapeAttribute(toDateInput(startsAt))}" data-search="${escapeAttribute(`${patient} ${clinician} ${reason} ${branch}`.toLowerCase())}"><td><span class="cell-primary"><strong>${escapeHtml(formatTime(startsAt))}</strong><small>${escapeHtml(formatDate(startsAt))}</small></span></td><td><strong>${escapeHtml(patient)}</strong></td><td>${escapeHtml(clinician)}</td><td>${escapeHtml(reason)}</td><td>${escapeHtml(branch || '—')}</td><td><span class="status-badge status-badge--${escapeAttribute(kebab(status))}">${escapeHtml(titleCase(status))}</span></td>${actionsCell}</tr>`;
   }).join('');
-  return `<table class="data-table"><thead><tr><th scope="col">Time</th><th scope="col">Patient</th><th scope="col">Clinician</th><th scope="col">Reason</th><th scope="col">Branch</th><th scope="col">Status</th>${includeAction ? '<th scope="col">Action</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="data-table"><thead><tr><th scope="col">Time</th><th scope="col">Patient</th><th scope="col">Clinician</th><th scope="col">Reason</th><th scope="col">Branch</th><th scope="col">Status</th>${showActionHeader ? '<th scope="col">Action</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderClinical() {
@@ -515,13 +537,15 @@ function renderClinical() {
 
 function clinicalNotesTable(notes) {
   const rows = notes.map((note) => {
+    const id = note.id;
     const patient = pick(note, 'patientName', 'patient_name') || personName(note.patient) || `Patient ${pick(note, 'patientId', 'patient_id') || ''}`;
     const author = pick(note, 'authorName', 'author_name', 'clinicianName', 'clinician_name') || personName(note.author || note.clinician) || 'Clinical team';
     const created = pick(note, 'createdAt', 'created_at', 'recordedAt', 'recorded_at');
     const diagnosis = pick(note, 'diagnosis', 'assessment') || 'Clinical note';
-    return `<tr><td><span class="cell-primary"><strong>${escapeHtml(patient)}</strong><small>${escapeHtml(formatDateTime(created))}</small></span></td><td>${escapeHtml(diagnosis)}</td><td>${escapeHtml(author)}</td></tr>`;
+    const action = `<td><button class="table-action" type="button" data-print-note="${id}">Print</button></td>`;
+    return `<tr><td><span class="cell-primary"><strong>${escapeHtml(patient)}</strong><small>${escapeHtml(formatDateTime(created))}</small></span></td><td>${escapeHtml(diagnosis)}</td><td>${escapeHtml(author)}</td>${action}</tr>`;
   }).join('');
-  return `<table class="data-table"><thead><tr><th scope="col">Patient</th><th scope="col">Assessment</th><th scope="col">Author</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="data-table"><thead><tr><th scope="col">Patient</th><th scope="col">Assessment</th><th scope="col">Author</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function labOrdersTable(orders) {
@@ -580,9 +604,15 @@ function invoicesTable(invoices) {
     const balanceCents = pick(invoice, 'balanceCents', 'balance_cents') ?? amountCents ?? Math.round(displayAmount * 100);
     const issuedAt = pick(invoice, 'issuedAt', 'issued_at', 'createdAt', 'created_at', 'dueDate', 'due_date');
     const status = String(pick(invoice, 'status', 'paymentStatus', 'payment_status') || 'unpaid').toLowerCase();
-    const action = canUseForm('markPaid') && !['paid', 'void'].includes(status)
-      ? `<button class="table-action" type="button" data-open-form="markPaid" data-record-id="${escapeAttribute(id)}" data-record-label="${escapeAttribute(String(number))}" data-balance-cents="${escapeAttribute(balanceCents)}">Mark paid</button>` : '—';
-    return `<tr data-filter-row data-status="${escapeAttribute(status)}" data-search="${escapeAttribute(`${number} ${patient} ${description}`.toLowerCase())}"><td><span class="cell-primary"><strong>${escapeHtml(String(number))}</strong><small>${escapeHtml(description)}</small></span></td><td>${escapeHtml(patient)}</td><td><strong>${formatCurrency(displayAmount)}</strong></td><td>${escapeHtml(formatDate(issuedAt))}</td><td><span class="status-badge status-badge--${escapeAttribute(kebab(status))}">${escapeHtml(titleCase(status))}</span></td><td>${action}</td></tr>`;
+    
+    let actions = [];
+    if (canUseForm('markPaid') && !['paid', 'void'].includes(status)) {
+      actions.push(`<button class="table-action" type="button" data-open-form="markPaid" data-record-id="${escapeAttribute(id)}" data-record-label="${escapeAttribute(String(number))}" data-balance-cents="${escapeAttribute(balanceCents)}">Mark paid</button>`);
+    }
+    actions.push(`<button class="table-action" type="button" data-print-invoice="${id}">Print</button>`);
+    const actionsCell = `<td><div class="row-actions">${actions.join(' ')}</div></td>`;
+
+    return `<tr data-filter-row data-status="${escapeAttribute(status)}" data-search="${escapeAttribute(`${number} ${patient} ${description}`.toLowerCase())}"><td><span class="cell-primary"><strong>${escapeHtml(String(number))}</strong><small>${escapeHtml(description)}</small></span></td><td>${escapeHtml(patient)}</td><td><strong>${formatCurrency(displayAmount)}</strong></td><td>${escapeHtml(formatDate(issuedAt))}</td><td><span class="status-badge status-badge--${escapeAttribute(kebab(status))}">${escapeHtml(titleCase(status))}</span></td>${actionsCell}</tr>`;
   }).join('');
   return `<table class="data-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Patient</th><th scope="col">Amount</th><th scope="col">Issued</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -619,7 +649,293 @@ function tableToolbar(kind, placeholder, showStatus = false, stockOnly = false) 
     }
   }
   const dateFilter = kind === 'appointments' ? `<label class="visually-hidden" for="${kind}-date">Filter by date</label><input id="${kind}-date" type="date" data-table-date>` : '';
-  return `<div class="toolbar"><label class="search-field" for="${kind}-search"><span class="visually-hidden">${escapeHtml(placeholder)}</span><svg aria-hidden="true"><use href="#icon-search"></use></svg><input id="${kind}-search" type="search" placeholder="${escapeAttribute(placeholder)}" data-table-search></label>${dateFilter}${statusOptions}</div>`;
+  const exportBtn = `<button class="button button--secondary button--small" type="button" data-export-csv="${kind}" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; margin-left: auto;" title="Export dataset to a CSV file"><svg aria-hidden="true" style="width: 16px; height: 16px;"><use href="#icon-download"></use></svg>Export CSV</button>`;
+  return `<div class="toolbar"><label class="search-field" for="${kind}-search"><span class="visually-hidden">${escapeHtml(placeholder)}</span><svg aria-hidden="true"><use href="#icon-search"></use></svg><input id="${kind}-search" type="search" placeholder="${escapeAttribute(placeholder)}" data-table-search></label>${dateFilter}${statusOptions}${exportBtn}</div>`;
+}
+
+function exportToCSV(kind) {
+  let headers = [];
+  let rows = [];
+  const filename = `${kind}_export_${new Date().toISOString().slice(0, 10)}.csv`;
+
+  if (kind === 'patients') {
+    headers = ['ID', 'MRN', 'First Name', 'Last Name', 'DOB', 'Gender', 'Phone', 'Email', 'Address', 'Emergency Contact', 'Allergies'];
+    rows = state.patients.map(p => [
+      p.id,
+      p.medicalRecordNumber || p.medical_record_number || '',
+      p.firstName || p.first_name || '',
+      p.lastName || p.last_name || '',
+      p.dateOfBirth || p.date_of_birth || '',
+      p.gender || '',
+      p.phone || '',
+      p.email || '',
+      p.address || '',
+      p.emergencyContact || p.emergency_contact || '',
+      p.allergies || ''
+    ]);
+  } else if (kind === 'appointments') {
+    headers = ['ID', 'Patient Name', 'Clinician Name', 'Start Time', 'End Time', 'Status', 'Reason', 'Notes'];
+    rows = state.appointments.map(a => [
+      a.id,
+      a.patientName || a.patient_name || '',
+      a.doctorName || a.doctor_name || '',
+      a.startsAt || a.starts_at || '',
+      a.endsAt || a.ends_at || '',
+      a.status || '',
+      a.reason || '',
+      a.notes || ''
+    ]);
+  } else if (kind === 'pharmacy') {
+    headers = ['ID', 'Name', 'Code', 'Strength', 'Category', 'Quantity', 'Reorder Level', 'Unit Price (AUD)'];
+    rows = state.medications.map(m => [
+      m.id,
+      m.name || '',
+      m.code || '',
+      m.strength || '',
+      m.category || '',
+      m.quantity || 0,
+      m.reorderLevel || m.reorder_level || 0,
+      (Number(m.unitPriceCents || m.unit_price_cents || 0) / 100).toFixed(2)
+    ]);
+  } else if (kind === 'billing') {
+    headers = ['Invoice ID', 'Patient Name', 'Description', 'Subtotal (AUD)', 'GST (AUD)', 'Total (AUD)', 'Paid (AUD)', 'Status', 'Issued At'];
+    rows = state.invoices.map(i => [
+      i.id,
+      i.patientName || i.patient_name || '',
+      i.description || '',
+      (Number(i.subtotalCents || i.subtotal_cents || 0) / 100).toFixed(2),
+      (Number(i.gstCents || i.gst_cents || 0) / 100).toFixed(2),
+      (Number(i.totalCents || i.total_cents || 0) / 100).toFixed(2),
+      (Number(i.paidCents || i.paid_cents || 0) / 100).toFixed(2),
+      i.status || '',
+      i.createdAt || i.created_at || ''
+    ]);
+  } else if (kind === 'audit') {
+    headers = ['Timestamp', 'Actor Name', 'Action', 'Entity Type', 'Entity ID', 'IP Address'];
+    rows = state.auditLogs.map(l => [
+      l.createdAt || l.created_at || l.occurredAt || l.occurred_at || l.timestamp || '',
+      l.actorName || l.actor_name || l.username || '',
+      l.action || '',
+      l.entityType || l.entity_type || '',
+      l.entityId || l.entity_id || '',
+      l.ipAddress || l.ip_address || ''
+    ]);
+  } else {
+    showToast('Export data not found.', 'error');
+    return;
+  }
+
+  if (!rows.length) {
+    showToast('No records available to export.', 'warning');
+    return;
+  }
+
+  const escapeCSV = (val) => {
+    let str = String(val ?? '').replace(/"/g, '""');
+    if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+      return `"${str}"`;
+    }
+    return str;
+  };
+
+  const csvContent = [
+    headers.map(escapeCSV).join(','),
+    ...rows.map(row => row.map(escapeCSV).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast(`Successfully exported ${rows.length} records.`, 'success');
+}
+
+function printInvoice(invoiceId) {
+  const invoice = state.invoices.find(i => String(i.id) === String(invoiceId));
+  if (!invoice) {
+    showToast('Invoice not found.', 'error');
+    return;
+  }
+
+  const id = pick(invoice, 'id', 'invoiceId', 'invoice_id');
+  const number = pick(invoice, 'invoiceNumber', 'invoice_number', 'number') || id;
+  const patientName = pick(invoice, 'patientName', 'patient_name') || 'Synthetic Patient';
+  const description = pick(invoice, 'description') || 'Hospital services';
+  const subtotalCents = pick(invoice, 'subtotalCents', 'subtotal_cents');
+  const gstCents = pick(invoice, 'gstCents', 'gst_cents');
+  const totalCents = pick(invoice, 'totalCents', 'total_cents');
+  const paidCents = pick(invoice, 'paidCents', 'paid_cents') || 0;
+  const balanceCents = totalCents - paidCents;
+  const status = String(pick(invoice, 'status', 'paymentStatus', 'payment_status') || 'unpaid').toUpperCase();
+  const issuedAt = pick(invoice, 'issuedAt', 'issued_at', 'createdAt', 'created_at');
+  const branchName = branchNameFor(pick(invoice, 'branchId', 'branch_id')) || 'St George Hospital';
+
+  const html = `
+    <div class="print-header">
+      <div>
+        <h1>ST GEORGE HMS</h1>
+        <p>${escapeHtml(branchName)}</p>
+        <p>Iterative Prototype / PWA Demo</p>
+      </div>
+      <div>
+        <div class="print-title">INVOICE</div>
+        <p style="text-align: right;">No: ${escapeHtml(String(number))}</p>
+        <p style="text-align: right;">Date: ${escapeHtml(formatDate(issuedAt))}</p>
+      </div>
+    </div>
+
+    <div class="print-grid">
+      <div class="print-card">
+        <h3>Billed To:</h3>
+        <p><strong>${escapeHtml(patientName)}</strong></p>
+        <p>Synthetic Record ID: ${escapeHtml(String(pick(invoice, 'patientId', 'patient_id') || ''))}</p>
+      </div>
+      <div class="print-card" style="text-align: right;">
+        <h3>Payment Status:</h3>
+        <span class="print-badge print-badge--${status.toLowerCase() === 'paid' ? 'paid' : 'unpaid'}">${escapeHtml(status)}</span>
+      </div>
+    </div>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align: right;">Amount (AUD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${escapeHtml(description)}</td>
+          <td style="text-align: right;">${formatCurrency(Number(subtotalCents || totalCents) / 100)}</td>
+        </tr>
+        <tr class="total-row">
+          <td>Subtotal:</td>
+          <td style="text-align: right;">${formatCurrency(Number(subtotalCents || (totalCents - (gstCents || 0))) / 100)}</td>
+        </tr>
+        <tr>
+          <td>GST (10%):</td>
+          <td style="text-align: right;">${formatCurrency(Number(gstCents || 0) / 100)}</td>
+        </tr>
+        <tr class="total-row" style="font-size: 16px;">
+          <td>Total Due:</td>
+          <td style="text-align: right;">${formatCurrency(Number(totalCents) / 100)}</td>
+        </tr>
+        <tr>
+          <td>Amount Paid:</td>
+          <td style="text-align: right; color: green;">${formatCurrency(Number(paidCents) / 100)}</td>
+        </tr>
+        <tr class="total-row" style="border-top: 1px dashed #333;">
+          <td>Outstanding Balance:</td>
+          <td style="text-align: right; color: ${balanceCents > 0 ? 'red' : 'black'};">${formatCurrency(Number(balanceCents) / 100)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="print-footer">
+      <p>Thank you for using St George HMS.</p>
+      <p>This is a synthetic patient invoice generated under iteration assessment guidelines. No real payments are processed.</p>
+    </div>
+  `;
+
+  triggerBrowserPrint(html);
+}
+
+function printClinicalNote(noteId) {
+  const note = state.clinicalNotes.find(n => String(n.id) === String(noteId));
+  if (!note) {
+    showToast('Clinical note not found.', 'error');
+    return;
+  }
+
+  const id = note.id;
+  const patientName = pick(note, 'patientName', 'patient_name') || 'Synthetic Patient';
+  const authorName = pick(note, 'authorName', 'author_name', 'clinicianName', 'clinician_name') || 'Clinical team';
+  const created = pick(note, 'createdAt', 'created_at', 'recordedAt', 'recorded_at');
+  const noteType = pick(note, 'noteType', 'note_type') || 'Progress Note';
+  const subjective = pick(note, 'subjective') || '';
+  const objective = pick(note, 'objective') || '';
+  const assessment = pick(note, 'diagnosis', 'assessment') || '';
+  const plan = pick(note, 'plan') || '';
+  const branchName = branchNameFor(pick(note, 'branchId', 'branch_id')) || 'St George Hospital';
+
+  const html = `
+    <div class="print-header">
+      <div>
+        <h1>ST GEORGE HMS</h1>
+        <p>${escapeHtml(branchName)}</p>
+        <p>Iterative Prototype / PWA Demo</p>
+      </div>
+      <div>
+        <div class="print-title">CASE REPORT</div>
+        <p style="text-align: right;">Record ID: ${escapeHtml(String(id))}</p>
+        <p style="text-align: right;">Date: ${escapeHtml(formatDateTime(created))}</p>
+      </div>
+    </div>
+
+    <div class="print-grid">
+      <div class="print-card">
+        <h3>Patient Info:</h3>
+        <p><strong>${escapeHtml(patientName)}</strong></p>
+        <p>Synthetic Record ID: ${escapeHtml(String(pick(note, 'patientId', 'patient_id') || ''))}</p>
+      </div>
+      <div class="print-card" style="text-align: right;">
+        <h3>Clinician / Author:</h3>
+        <p><strong>${escapeHtml(authorName)}</strong></p>
+        <p>Care Team Member</p>
+      </div>
+    </div>
+
+    <h2 style="font-size: 18px; border-bottom: 2px solid #222; padding-bottom: 6px; margin-bottom: 20px; text-transform: uppercase;">
+      ${escapeHtml(noteType)}
+    </h2>
+
+    ${subjective ? `
+    <div class="print-clinical-section">
+      <h4>Subjective (S)</h4>
+      <p>${escapeHtml(subjective)}</p>
+    </div>` : ''}
+
+    ${objective ? `
+    <div class="print-clinical-section">
+      <h4>Objective (O)</h4>
+      <p>${escapeHtml(objective)}</p>
+    </div>` : ''}
+
+    ${assessment ? `
+    <div class="print-clinical-section">
+      <h4>Assessment (A)</h4>
+      <p>${escapeHtml(assessment)}</p>
+    </div>` : ''}
+
+    ${plan ? `
+    <div class="print-clinical-section">
+      <h4>Plan (P)</h4>
+      <p>${escapeHtml(plan)}</p>
+    </div>` : ''}
+
+    <div class="print-footer">
+      <p>Confidential Medical Record — Authorized Access Only.</p>
+      <p>This is a synthetic patient record generated under iteration assessment guidelines. No real health operations are conducted.</p>
+    </div>
+  `;
+
+  triggerBrowserPrint(html);
+}
+
+function triggerBrowserPrint(htmlContent) {
+  document.body.classList.add('printing-mode');
+  const printContainer = document.createElement('div');
+  printContainer.id = 'print-area';
+  printContainer.innerHTML = htmlContent;
+  document.body.appendChild(printContainer);
+  window.print();
+  document.body.removeChild(printContainer);
+  document.body.classList.remove('printing-mode');
 }
 
 function emptyState(icon, title, message) {
@@ -647,6 +963,21 @@ function handleTableFilter(event) {
 }
 
 function handleActionClick(event) {
+  const exportBtn = event.target.closest('[data-export-csv]');
+  if (exportBtn) {
+    exportToCSV(exportBtn.dataset.exportCsv);
+    return;
+  }
+  const printInvoiceBtn = event.target.closest('[data-print-invoice]');
+  if (printInvoiceBtn) {
+    printInvoice(printInvoiceBtn.dataset.printInvoice);
+    return;
+  }
+  const printNoteBtn = event.target.closest('[data-print-note]');
+  if (printNoteBtn) {
+    printClinicalNote(printNoteBtn.dataset.printNote);
+    return;
+  }
   const goPage = event.target.closest('[data-go-page]');
   if (goPage) {
     navigateTo(goPage.dataset.goPage, { updateHash: true, focus: true });
@@ -669,6 +1000,87 @@ function handleActionClick(event) {
 
 function formDefinitions() {
   return {
+    editPatient: {
+      eyebrow: 'Clinical registry',
+      title: 'Edit patient profile',
+      description: 'Updating patient demographics. Every profile modification is logged in the audit trail.',
+      submitLabel: 'Save changes',
+      method: 'PATCH',
+      endpoint: (context) => `${API_ENDPOINTS.patients}/${context.recordId}`,
+      success: 'Patient profile updated successfully.',
+      fields: [
+        field('firstName', 'First name', 'text', { required: true, autocomplete: 'off' }),
+        field('lastName', 'Last name', 'text', { required: true, autocomplete: 'off' }),
+        field('dateOfBirth', 'Date of birth', 'date', { required: true, max: toDateInput(new Date()) }),
+        selectField('gender', 'Gender', [['Female', 'Female'], ['Male', 'Male'], ['Non-binary', 'Non-binary'], ['Other', 'Other'], ['Not specified', 'Not specified']], { required: true }),
+        field('phone', 'Phone', 'tel', { placeholder: '04xx xxx xxx', pattern: '[0-9+() \\-]{8,20}' }),
+        field('email', 'Email', 'email', { placeholder: 'synthetic@example.test' }),
+        field('address', 'Address', 'text', { wide: true, placeholder: 'Synthetic address' }),
+        field('emergencyContact', 'Emergency contact', 'text', { wide: true, placeholder: 'Synthetic contact name and phone' }),
+        field('allergies', 'Allergies', 'text', { wide: true, placeholder: 'e.g. Penicillin, Pollen (or No known allergies)' })
+      ]
+    },
+    editAppointment: {
+      eyebrow: 'Scheduling',
+      title: 'Modify appointment',
+      description: 'Updating or cancelling an appointment. A cancellation reason is mandatory if status is set to Cancelled.',
+      submitLabel: 'Save changes',
+      method: 'PATCH',
+      endpoint: (context) => `${API_ENDPOINTS.appointments}/${context.recordId}`,
+      success: 'Appointment updated successfully.',
+      fields: [
+        selectField('status', 'Status', [
+          ['Scheduled', 'Scheduled'],
+          ['Checked In', 'Checked In'],
+          ['In Progress', 'In Progress'],
+          ['Completed', 'Completed'],
+          ['Cancelled', 'Cancelled'],
+          ['No Show', 'No Show']
+        ], { required: true }),
+        doctorField(true),
+        field('startsAt', 'Start time', 'datetime-local', { required: true }),
+        field('endsAt', 'End time', 'datetime-local', { required: true }),
+        field('reason', 'Reason for appointment', 'textarea', { required: true, wide: true, maxlength: 500 }),
+        field('cancellationReason', 'Cancellation reason', 'textarea', { wide: true, placeholder: 'Required only if status is Cancelled' })
+      ]
+    },
+    nurseObservation: {
+      eyebrow: 'Clinical workflow',
+      title: 'Record nurse observations',
+      description: 'Nurses record patient vitals (temperature, pulse, BP, respiration) as part of the care audit trail.',
+      submitLabel: 'Save observations',
+      method: 'POST',
+      endpoint: API_ENDPOINTS.clinicalNotes,
+      success: 'Observations recorded successfully.',
+      transformPayload: (payload) => {
+        payload.noteType = 'Observation';
+        payload.subjective = 'Nurse routine check-up and vitals assessment.';
+        payload.objective = `Temperature: ${payload.temp}°C, Pulse: ${payload.pulse} bpm, Blood Pressure: ${payload.bpSystolic || payload.bp_systolic || ''}/${payload.bpDiastolic || payload.bp_diastolic || ''} mmHg, Respiration Rate: ${payload.resp} /min.`;
+        payload.assessment = payload.assessmentNote || 'Vitals taken and checked.';
+        payload.plan = payload.planNote || 'Continue routine monitoring.';
+        delete payload.temp;
+        delete payload.pulse;
+        delete payload.bpSystolic;
+        delete payload.bp_systolic;
+        delete payload.bpDiastolic;
+        delete payload.bp_diastolic;
+        delete payload.resp;
+        delete payload.assessmentNote;
+        delete payload.planNote;
+        return payload;
+      },
+      fields: [
+        patientField(true),
+        field('appointmentId', 'Appointment ID', 'text', { hint: 'Optional: link to an appointment.' }),
+        field('temp', 'Temperature (°C)', 'number', { required: true, min: 30, max: 45, step: 0.1 }),
+        field('pulse', 'Pulse rate (bpm)', 'number', { required: true, min: 20, max: 250, step: 1 }),
+        field('bpSystolic', 'BP Systolic (mmHg)', 'number', { required: true, min: 50, max: 250, step: 1 }),
+        field('bpDiastolic', 'BP Diastolic (mmHg)', 'number', { required: true, min: 30, max: 180, step: 1 }),
+        field('resp', 'Respiration rate (/min)', 'number', { required: true, min: 5, max: 60, step: 1 }),
+        field('assessmentNote', 'Assessment details / note', 'text', { placeholder: 'e.g. Normal, febrile, hypotensive' }),
+        field('planNote', 'Plan / recommendations', 'text', { placeholder: 'e.g. Patient advised to rest' })
+      ]
+    },
     patient: {
       eyebrow: 'Patient administration',
       title: 'Register patient',
@@ -686,7 +1098,8 @@ function formDefinitions() {
         field('email', 'Email', 'email', { placeholder: 'synthetic@example.test' }),
         branchField(true),
         field('address', 'Address', 'text', { wide: true, placeholder: 'Synthetic address' }),
-        field('emergencyContact', 'Emergency contact', 'text', { wide: true, placeholder: 'Synthetic contact name and phone' })
+        field('emergencyContact', 'Emergency contact', 'text', { wide: true, placeholder: 'Synthetic contact name and phone' }),
+        field('allergies', 'Allergies', 'text', { wide: true, placeholder: 'e.g. Penicillin, Pollen (or No known allergies)' })
       ]
     },
     appointment: {
@@ -717,6 +1130,7 @@ function formDefinitions() {
       fields: [
         patientField(true),
         field('appointmentId', 'Appointment ID', 'text', { hint: 'Optional: link this note to an appointment.' }),
+        field('subjective', 'Subjective notes (Patient complaints)', 'textarea', { wide: true }),
         field('objective', 'Objective observations', 'textarea', { required: true, wide: true }),
         field('assessment', 'Assessment / diagnosis', 'textarea', { required: true, wide: true }),
         field('plan', 'Treatment plan', 'textarea', { wide: true })
@@ -876,6 +1290,15 @@ async function openRecordDialog(formName, context = {}) {
   elements.dialogSubmit.textContent = definition.submitLabel;
   elements.dialogStatus.textContent = '';
   elements.dialogFields.innerHTML = definition.fields.map(renderFormField).join('');
+
+  // Prefill fields from context dataset
+  for (const field of definition.fields) {
+    const val = context[field.name];
+    if (val !== undefined) {
+      const input = elements.dialogFields.querySelector(`[name="${field.name}"]`);
+      if (input) input.value = val;
+    }
+  }
 
   if (context.inventoryId) {
     const input = elements.dialogFields.querySelector('[name="inventoryId"]');
@@ -1251,4 +1674,101 @@ function toCamel(value) {
 
 function kebab(value) {
   return String(value).replace(/([a-z])([A-Z])/g, '$1-$2').replace(/_/g, '-').toLowerCase();
+}
+
+function initChatbot() {
+  if (!elements.chatToggle) return;
+
+  elements.chatToggle.addEventListener('click', () => {
+    elements.chatDrawer.hidden = !elements.chatDrawer.hidden;
+    if (!elements.chatDrawer.hidden) {
+      elements.chatInput.focus();
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+    }
+  });
+
+  elements.chatClose.addEventListener('click', () => {
+    elements.chatDrawer.hidden = true;
+  });
+
+  elements.chatMessages.addEventListener('click', (event) => {
+    const chip = event.target.closest('.chat-suggestion-chip');
+    if (chip) {
+      const question = chip.textContent;
+      askAssistant(question);
+    }
+  });
+
+  elements.chatForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const question = elements.chatInput.value.trim();
+    if (!question) return;
+    elements.chatInput.value = '';
+    askAssistant(question);
+  });
+}
+
+function askAssistant(message) {
+  appendChatMessage(message, 'user');
+
+  const indicator = document.createElement('div');
+  indicator.className = 'chat-msg chat-msg--assistant typing-indicator';
+  indicator.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  elements.chatMessages.appendChild(indicator);
+  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+
+  setTimeout(() => {
+    indicator.remove();
+    const reply = getAssistantReply(message);
+    appendChatMessage(reply, 'assistant');
+  }, 700 + Math.random() * 400);
+}
+
+function appendChatMessage(text, sender) {
+  const container = document.createElement('div');
+  container.className = `chat-msg chat-msg--${sender}`;
+  container.innerHTML = `<p>${escapeHtml(text)}</p>`;
+  elements.chatMessages.appendChild(container);
+  
+  if (sender === 'assistant') {
+    const suggestions = document.createElement('div');
+    suggestions.className = 'chat-suggestions';
+    suggestions.innerHTML = `
+      <button class="chat-suggestion-chip" type="button">How do I register a patient?</button>
+      <button class="chat-suggestion-chip" type="button">How do I cancel an appointment?</button>
+      <button class="chat-suggestion-chip" type="button">Who can record clinical notes?</button>
+      <button class="chat-suggestion-chip" type="button">How can I export CSV data?</button>
+    `;
+    elements.chatMessages.appendChild(suggestions);
+  }
+
+  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+}
+
+function getAssistantReply(text) {
+  const clean = String(text || '').trim().toLowerCase();
+  
+  if (clean.includes('register') || clean.includes('patient') && clean.includes('how')) {
+    return "To register a patient, click 'Patients' in the sidebar navigation, then click the 'Add patient' button in the top header action. Patient registration is permitted for Receptionists, Branch Managers, and Administrators.";
+  }
+  if (clean.includes('cancel') || clean.includes('reschedule') || clean.includes('modify') || clean.includes('appointment')) {
+    return "To modify or cancel a scheduled booking, go to 'Appointments' from the sidebar and click the 'Modify' button on the appointment row. Note that if you set status to 'Cancelled', a mandatory cancellation reason must be typed.";
+  }
+  if (clean.includes('clinical') || clean.includes('note') || clean.includes('doctor') || clean.includes('nurse')) {
+    return "Clinical progress notes can be appended under the 'Clinical & Labs' view by Doctors and Nurses. SOAP details subjective complaints, objective vitals, assessment (diagnosis), and plan. Nurses can record structured vitals (temp, pulse, BP, resp) using the 'Record vitals / observation' form.";
+  }
+  if (clean.includes('billing') || clean.includes('invoice') || clean.includes('pay')) {
+    return "Billing invoices are managed by Receptionists and Administrators under the 'Billing' panel. Unpaid invoices can be finalized by clicking 'Mark paid' and specifying the transaction type (Cash, Card, Bank Transfer).";
+  }
+  if (clean.includes('export') || clean.includes('csv')) {
+    return "You can backup/export active lists (Patients, Appointments, Stock, Invoices, Audit logs) by clicking the 'Export CSV' button in the search toolbar of their respective pages. It downloads a spreadsheet file immediately.";
+  }
+  if (clean.includes('print')) {
+    return "You can print tax invoices or clinical progress case reports by clicking the 'Print' button next to their list entries. This loads a clean A4 paper template in the system print dialog.";
+  }
+  if (clean.includes('hello') || clean.includes('hi') || clean.includes('hey') || clean.includes('help')) {
+    return "Hello! I am your St George Care Assistant. I am here to help guide you on using this Hospital Management System. Select one of the quick suggestions or ask a question below!";
+  }
+  
+  return "I'm sorry, I didn't quite capture that. Try asking about patient registration, booking appointments, billing/invoices, clinical notes, CSV exports, or select one of the suggested topics below.";
 }
