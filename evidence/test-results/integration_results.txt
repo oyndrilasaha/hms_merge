@@ -1,0 +1,28 @@
+
+> st-george-hospital-management-system@0.1.0 test
+> node --test --test-reporter=spec
+
+✔ T-AUTH-01: login, session cookie, current user, expiry and logout (768.082417ms)
+✔ T-AUTH-02: seeded passwords are salted slow hashes and verify safely (1320.956583ms)
+✔ T-RBAC-01 / T-CSRF-01: mutations reject missing CSRF and forbidden roles (645.731541ms)
+✔ T-PAT-01: receptionist creates a validated patient and unique MRN (524.969458ms)
+✔ T-APT-01 / T-APT-02: doctor books an appointment and overlap is atomic 409 (522.823667ms)
+✔ T-CLN-01: doctor appends an attributed clinical note (521.779333ms)
+✔ T-LAB-01: doctor order flows to a lab-technician result (575.77675ms)
+✔ T-PHM-01 / T-PHM-02: dispensing decrements stock and rejects unsafe batches (539.996333ms)
+✔ T-BIL-01: invoice totals and payment-derived status remain consistent (522.428916ms)
+✔ T-AUD-01: failed authentication and material writes retain actor/object/time evidence (647.379541ms)
+✔ T-SCOPE-01: a patient sees only their own records (537.839708ms)
+✔ T-PWA-01: static shell, manifest, worker and icons are served with security headers (3521.226417ms)
+✔ T-PAT-02: modify patient details via PATCH /api/patients/:id (536.207542ms)
+✔ T-APT-03: modify/cancel appointment via PATCH /api/appointments/:id (526.060125ms)
+✔ T-EXPORT-01: CSV export frontend markup and button exist in toolbar helper (3496.283125ms)
+✔ T-CHAT-01: care assistant chatbot drawer is served in the layout and bundle (3490.388542ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18828.064792
