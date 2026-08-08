@@ -613,7 +613,8 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
       || stringField(body, 'resultValue', { max: 6000, label: 'Result' });
     const resultUnits = stringField(body, 'resultUnits', { max: 80, label: 'Result units' });
     const referenceRange = stringField(body, 'referenceRange', { max: 160, label: 'Reference range' });
-    if (![status, resultText, resultUnits, referenceRange].some((value) => value !== null)) {
+    const attachmentUrl = stringField(body, 'attachmentUrl', { max: 1000, label: 'Attachment URL' });
+    if (![status, resultText, resultUnits, referenceRange, attachmentUrl].some((value) => value !== null)) {
       throw new ApiError(400, 'VALIDATION_ERROR', 'Provide at least one lab order field to update.');
     }
     if (session.role === 'Doctor' && status !== 'Cancelled') {
@@ -622,9 +623,9 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     if (session.role === 'Nurse' && status !== 'Collected') {
       throw new ApiError(403, 'FORBIDDEN', 'Nurses may only mark a lab order as collected.');
     }
-    if ((resultText !== null || resultUnits !== null || referenceRange !== null)
+    if ((resultText !== null || resultUnits !== null || referenceRange !== null || attachmentUrl !== null)
         && !['Admin', 'Lab Technician'].includes(session.role)) {
-      throw new ApiError(403, 'FORBIDDEN', 'Only laboratory staff may enter results.');
+      throw new ApiError(403, 'FORBIDDEN', 'Only laboratory staff may enter results or attachments.');
     }
     const finalStatus = status || order.status;
     const finalResult = resultText !== null ? resultText : order.result;
@@ -638,12 +639,13 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
         result = COALESCE(?, result),
         result_units = COALESCE(?, result_units),
         reference_range = COALESCE(?, reference_range),
+        attachment_url = COALESCE(?, attachment_url),
         resulted_by = CASE WHEN ? THEN ? ELSE resulted_by END,
         resulted_at = CASE WHEN ? THEN ? ELSE resulted_at END,
         updated_at = ?
       WHERE id = ?
     `).run(
-      finalStatus, resultText, resultUnits, referenceRange,
+      finalStatus, resultText, resultUnits, referenceRange, attachmentUrl,
       isResulted ? 1 : 0, session.id,
       isResulted ? 1 : 0, new Date().toISOString(),
       new Date().toISOString(), id,
@@ -651,6 +653,7 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     log(req, session, 'LAB_ORDER_UPDATED', 'lab_order', id, {
       status: finalStatus,
       resultEntered: resultText !== null,
+      attachmentProvided: attachmentUrl !== null,
     });
     sendData(res, camelize(db.prepare('SELECT * FROM lab_orders WHERE id = ?').get(id)));
   }

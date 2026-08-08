@@ -216,6 +216,8 @@ function openDatabase({ filename = DEFAULT_DATABASE_FILE, seed = true } = {}) {
   db.exec(fs.readFileSync(SCHEMA_FILE, 'utf8'));
   const invoiceColumns = db.prepare('PRAGMA table_info(invoices)').all().map((column) => column.name);
   if (!invoiceColumns.includes('due_date')) db.exec('ALTER TABLE invoices ADD COLUMN due_date TEXT;');
+  const labColumns = db.prepare('PRAGMA table_info(lab_orders)').all().map((column) => column.name);
+  if (!labColumns.includes('attachment_url')) db.exec('ALTER TABLE lab_orders ADD COLUMN attachment_url TEXT;');
   db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(new Date().toISOString());
   if (seed) seedDatabase(db);
   return db;

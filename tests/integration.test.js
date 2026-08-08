@@ -250,11 +250,13 @@ test('T-LAB-01: doctor order flows to a lab-technician result', async (t) => {
       result: '5.1',
       resultUnits: '%',
       referenceRange: '4.0–5.6',
+      attachmentUrl: 'https://demo.stgeorge.local/reports/hba1c_1.pdf',
     },
   });
   assert.equal(resulted.status, 200, resulted.text);
   assert.equal(resulted.payload.data.status, 'Completed');
   assert.equal(resulted.payload.data.result, '5.1');
+  assert.equal(resulted.payload.data.attachmentUrl, 'https://demo.stgeorge.local/reports/hba1c_1.pdf');
   assert.equal(resulted.payload.data.resultedBy, labtech.user.id);
   assert.ok(resulted.payload.data.resultedAt);
 

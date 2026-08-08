@@ -555,9 +555,13 @@ function labOrdersTable(orders) {
     const testName = pick(order, 'testName', 'test_name') || 'Diagnostic test';
     const status = String(pick(order, 'status') || 'ordered').toLowerCase();
     const priority = String(pick(order, 'priority') || 'routine').toLowerCase();
+    const attachmentUrl = pick(order, 'attachmentUrl', 'attachment_url');
+    const attachmentLink = attachmentUrl 
+      ? `<br><a href="${escapeAttribute(attachmentUrl)}" target="_blank" class="document-link" style="display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; font-weight: bold; color: #0055cc;"><svg style="width: 12px; height: 12px; fill: currentColor;"><use href="#icon-download"></use></svg> View Attached Report</a>` 
+      : '';
     const action = canUseForm('labResult') && !['completed', 'final', 'cancelled'].includes(status)
       ? `<button class="table-action" type="button" data-open-form="labResult" data-record-id="${escapeAttribute(id)}" data-record-label="${escapeAttribute(testName)}">Record result</button>` : '—';
-    return `<tr><td><span class="cell-primary"><strong>${escapeHtml(testName)}</strong><small>${escapeHtml(patient)}</small></span></td><td><span class="status-badge status-badge--${priority === 'urgent' ? 'danger' : 'active'}">${escapeHtml(titleCase(priority))}</span></td><td><span class="status-badge status-badge--${escapeAttribute(status)}">${escapeHtml(titleCase(status))}</span></td><td>${action}</td></tr>`;
+    return `<tr><td><span class="cell-primary"><strong>${escapeHtml(testName)}</strong><small>${escapeHtml(patient)}</small>${attachmentLink}</span></td><td><span class="status-badge status-badge--${priority === 'urgent' ? 'danger' : 'active'}">${escapeHtml(titleCase(priority))}</span></td><td><span class="status-badge status-badge--${escapeAttribute(status)}">${escapeHtml(titleCase(status))}</span></td><td>${action}</td></tr>`;
   }).join('');
   return `<table class="data-table"><thead><tr><th scope="col">Order</th><th scope="col">Priority</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -1154,7 +1158,7 @@ function formDefinitions() {
     labResult: {
       eyebrow: 'Laboratory result',
       title: 'Record lab result',
-      description: 'Enter the verified result and mark the order as completed.',
+      description: 'Enter the verified result, optional report file link, and mark completed.',
       submitLabel: 'Finalise result',
       method: 'PATCH',
       endpoint: (context) => API_ENDPOINTS.labOrder(context.recordId),
@@ -1162,6 +1166,7 @@ function formDefinitions() {
       fields: [
         field('result', 'Result', 'textarea', { required: true, wide: true }),
         field('referenceRange', 'Reference range', 'text'),
+        field('attachmentUrl', 'Attachment PDF / Report Link', 'url', { placeholder: 'e.g., https://demo.stgeorge.local/reports/lab_result.pdf', wide: true }),
         selectField('status', 'Status', [['Completed', 'Completed'], ['Processing', 'Processing']], { required: true, value: 'Completed' })
       ]
     },
