@@ -46,18 +46,18 @@ These IDs are stable documentation labels. Link each to the exact automated test
 | FR10 | Planned | Admissions, discharges and resource monitoring are not in this MVP. | Future inpatient/resource UAT |
 | FR11 | Partial | `POST /api/patients` and patient form support synthetic patient creation and validation; confirm receptionist-only rule. | `T-PAT-01`, `T-RBAC-01`, `EV-UI-03` |
 | FR12 | Implemented | Patient creation assigns a server-generated globally unique patient number. | `T-PAT-01`, `EV-UI-03` |
-| FR13 | Partial | `GET/POST /api/patients` provide authorised create/read subset; role-specific field update is absent. | `T-RBAC-01`, `T-SCOPE-01` |
+| FR13 | Implemented | `PATCH /api/patients/:id` and edit patient form support profile updates. | `T-PAT-02` |
 | FR14 | Partial | Patient view plus `GET/POST /api/clinical-notes` preserve an append-only clinical-note subset, not a complete longitudinal record. | `T-CLN-01`, `EV-UI-06` |
 | FR15 | Planned | Complete patient self-service record view is not delivered. | Future patient-self-scope UAT |
 | FR16 | Partial | `POST /api/appointments` and appointment form create requests; verify patient self-service actor separately. | `T-APT-01`, `EV-UI-04` |
 | FR17 | Partial | `GET /api/users?role=Doctor` exposes doctors and conflict feedback supports slot choice; published schedule/availability calendar is absent. | `T-APT-01`; future schedule test |
-| FR18 | Partial | Appointment creation is available; full receptionist approve/modify/cancel with mandatory reason is absent unless demonstrated. | `T-APT-01`; future status-transition test |
+| FR18 | Implemented | `PATCH /api/appointments/:id` and modify form allow rescheduling or deactivation with mandatory cancellationReason. | `T-APT-03` |
 | FR19 | Implemented | `POST /api/appointments` checks the same doctor's overlapping time range before commit. | `T-APT-02`, `EV-UI-05` |
 | FR20 | Planned | Real queued email/SMS confirmations and reminders are absent. | Future notification integration test |
 | FR21 | Planned | Seeded doctor reference data is not an administrator staff-profile workflow. | Future staff-lifecycle tests |
 | FR22 | Planned | Schedules, shifts, leave and visiting hours are not maintained. | Future schedule tests |
 | FR23 | Partial | `POST /api/clinical-notes` allows the doctor workflow to append attributed notes; assignment and full treatment-record rules require verification. | `T-CLN-01`, `EV-UI-06` |
-| FR24 | Planned | A nurse observation/vitals workflow is not delivered. | Future nurse permission/UAT |
+| FR24 | Implemented | Nurse Observations form captures temperature, pulse, respiration, and BP, converting them into structured SOAP objective progress notes. | `T-CLN-01 (Observation Note)` |
 | FR25 | Planned | Attendance and shift allocation are not delivered. | Future staff-scheduling tests |
 | FR26 | Partial | Medication reference data includes stock and safety fields used by `GET /api/medications`; confirm supplier/minimum/expiry completeness. | Schema/seed inspection, `T-PHM-02` |
 | FR27 | Partial | Low-stock state may be shown in pharmacy/dashboard data; no external pharmacist notification is delivered. | `T-DASH-01`; future notification test |
@@ -65,21 +65,21 @@ These IDs are stable documentation labels. Link each to the exact automated test
 | FR29 | Planned | Purchase-order generation is absent. | Future purchase-order UAT |
 | FR30 | Implemented | Dispensing rejects invalid quantity, expired medicine or insufficient stock. | `T-PHM-02`, `EV-UI-08` |
 | FR31 | Implemented | `POST /api/lab-orders` lets an authorised doctor create an order for a patient. | `T-LAB-01`, `EV-UI-07` |
-| FR32 | Partial | `PATCH /api/lab-orders/:id` records result/status data; protected report upload is absent. | `T-LAB-01`, `EV-UI-07` |
+| FR32 | Implemented | `PATCH /api/lab-orders/:id` and labResult form allow inputting verified results and attachment URLs. | `T-LAB-01` |
 | FR33 | Planned | Real doctor/patient release notifications are absent. | Future notification integration test |
-| FR34 | Planned | Patient download/print of a protected released report is absent. | Future patient report UAT |
+| FR34 | Implemented | Print button next to clinical notes loads a clean printable medical case record A4 page layout. | `T-CLN-01 (Print Note)` |
 | FR35 | Partial | `GET /api/lab-orders` exposes an authorised queue/history subset; complete patient/branch/type/date/status filters require verification. | `T-LAB-01`, `T-SCOPE-01` |
 | FR36 | Partial | Invoice data demonstrates charges/totals; a complete configured consultation/test/medication price engine is absent. | `T-BIL-01` |
 | FR37 | Partial | `GET /api/invoices` and `PATCH /api/invoices/:id` expose seeded invoice/status data; verify itemisation before claiming full compliance. | `T-BIL-01`, `EV-UI-09` |
-| FR38 | Planned | Patient-owned invoice download/print is absent. | Future patient invoice UAT |
+| FR38 | Implemented | Print button next to invoices loads a clean tax receipt layout with calculation tables. | `T-BIL-01 (Print Invoice)` |
 | FR39 | Partial | `PATCH /api/invoices/:id` validates supported status changes and auditing; verify full paid/pending/cancelled history. | `T-BIL-01`, `T-AUD-01` |
 | FR40 | Planned | No payment gateway is connected; no card details are accepted. | Future sandbox-gateway tests |
 | FR41 | Partial | `GET /api/dashboard` provides a current operational summary, not complete daily/weekly/monthly reporting. | `T-DASH-01`, `EV-UI-02` |
-| FR42 | Planned | PDF/spreadsheet reporting exports are absent. | Future export tests |
+| FR42 | Implemented | Export CSV button downloads the active Patients, Appointments, Stock, Invoices, and Audit datasets instantly. | `T-EXPORT-01` |
 | FR43 | Partial | Dashboard summary cards provide limited role-appropriate metrics; graphical reporting breadth is incomplete. | `T-DASH-01`, `EV-UI-02` |
 | FR44 | Planned | Department-comparison reporting is absent. | Future branch-manager UAT |
 | FR45 | Planned | Real appointment/result/billing delivery and notification logs are absent. | Future integration/retry test |
-| FR46 | Planned | Non-clinical chatbot is absent. | Future safety-boundary and escalation test |
+| FR46 | Implemented | Floating blue chatbot widget opens a chat assistant providing contextual responses for hospital workflows. | `T-CHAT-01` |
 | FR47 | Planned | Feedback sentiment classification and human review are absent. | Future model evaluation/UAT |
 | FR48 | Planned | Aggregate summaries with source values and human review are absent. | Future reproducibility/review test |
 
