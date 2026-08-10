@@ -379,37 +379,72 @@
 
     <!-- Public Footer -->
     <footer class="public-footer">
-      <div class="public-container public-footer-inner">
-        <div class="footer-brand">
+      <div class="public-container public-footer-grid">
+        <div class="footer-brand-col">
           <div class="brand-lockup brand-lockup--public">
             <span class="brand-mark" aria-hidden="true"><svg><use href="#icon-cross"></use></svg></span>
-            <span><strong>St George Hospital</strong><small>Hospital Management System</small></span>
+            <span><strong>St George Hospital</strong><small>Kogarah Campus • Caring since 1894</small></span>
           </div>
-          <p>Providing high-reliability, patient-centered clinical care and academic health sciences excellence across New South Wales.</p>
+          <p class="brand-desc">Serving Kogarah, southern Sydney, and New South Wales. Providing high-reliability clinical care, research excellence, and patient-centered healing services.</p>
+          <div class="brand-hotline">
+            <strong>Triage Hotline: (02) 9113 1111</strong>
+            <span>Gray Street, Kogarah NSW 2217</span>
+          </div>
         </div>
-        <div class="footer-links-col">
+        
+        <div class="footer-links-column">
+          <h4>About Us</h4>
+          <a href="#" data-info-key="about-hospital">About Our Hospital</a>
+          <a href="#" data-info-key="history">Hospital History</a>
+          <a href="#" data-info-key="executive-team">Executive Leadership</a>
+          <a href="#" data-info-key="contact-us">General Contact</a>
+        </div>
+        
+        <div class="footer-links-column">
           <h4>Clinical Services</h4>
-          <a href="#services">Cardiology & Heart Care</a>
-          <a href="#services">Level 1 Emergency Trauma</a>
-          <a href="#services">Oncology & Chemotherapy</a>
-          <a href="#services">Orthopedics & Surgery</a>
+          <a href="#" data-info-key="bariatric-surgery">Bariatric Surgery</a>
+          <a href="#" data-info-key="cardiology">Cardiology & Heart</a>
+          <a href="#" data-info-key="oncology">Oncology & Chemotherapy</a>
+          <a href="#" data-info-key="orthopaedics">Orthopaedics & Joint</a>
+          <a href="#" data-info-key="icu">Intensive Care Unit</a>
+          <a href="#" data-info-key="research">Clinical Trials & Research</a>
         </div>
-        <div class="footer-links-col">
-          <h4>Portal & Accounts</h4>
-          <a href="#home" class="trigger-portal-link">Staff & Patient Login</a>
-          <a href="#amenities">Patient Portal Benefits</a>
-          <a href="#doctors">Consultant Directory</a>
-          <a href="#locations">Campus Locations</a>
+        
+        <div class="footer-links-column">
+          <h4>Maternity</h4>
+          <a href="#" data-info-key="maternity-unit">Birthing Unit</a>
+          <a href="#" data-info-key="maternity-education">Maternity Classes</a>
         </div>
-        <div class="footer-links-col">
-          <h4>Compliance & Standards</h4>
-          <p>NSW Health Governance Framework</p>
-          <p>Australian Commission on Safety & Quality</p>
-          <p>Synthetic Data Training Prototype</p>
+
+        <div class="footer-links-column">
+          <h4>For Patients</h4>
+          <a href="#" data-info-key="online-admission-form" style="font-weight: 700; color: #0891b2;">Online Admission Form</a>
+          <a href="#" data-info-key="pre-admission">Pre-Admission Guide</a>
+          <a href="#" data-info-key="your-surgery">Preparing for Surgery</a>
+          <a href="#" data-info-key="patient-rights">Rights & Responsibilities</a>
+          <a href="#" data-info-key="falls-prevention">Falls Prevention</a>
+          <a href="#" data-info-key="privacy-policy">Privacy & Records</a>
+        </div>
+
+        <div class="footer-links-column">
+          <h4>Visitors & GPs</h4>
+          <a href="#" data-info-key="parking">Parking Rates</a>
+          <a href="#" data-info-key="visiting-hours">Visiting Hours</a>
+          <a href="#" data-info-key="public-transport">Public Transport</a>
+          <a href="#" data-info-key="gp-referrals">GP Referrals</a>
+          <a href="#" data-info-key="gp-education">GP Continuing Ed</a>
+        </div>
+
+        <div class="footer-links-column">
+          <h4>Education & Careers</h4>
+          <a href="#" data-info-key="health-education">Community Health</a>
+          <a href="#" data-info-key="careers">Careers at St George</a>
+          <a href="#" data-info-key="volunteer">Volunteer Services</a>
         </div>
       </div>
-      <div class="public-container footer-bottom">
-        <p>© 2026 St George Hospital Management System (HMS). All rights reserved. Built for Kent Institute Capstone CPRO306.</p>
+      
+      <div class="public-container footer-bottom-new">
+        <p>© 2026 St George Hospital Management System (HMS). All rights reserved. NSW Health Public Accreditations.</p>
       </div>
     </footer>
   </div>
@@ -579,6 +614,90 @@
         <button id="dialog-submit" class="button button--primary" type="submit">Save</button>
       </footer>
     </form>
+  </dialog>
+
+  <!-- Public Patient Admission Modal -->
+  <dialog id="admission-dialog" class="record-dialog" aria-labelledby="admission-dialog-title">
+    <form id="admission-form" class="stack-form" novalidate>
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">St George Hospital Patient Portal</p>
+          <h2 id="admission-dialog-title">Online Admission Form</h2>
+        </div>
+        <button id="admission-dialog-close" class="icon-button" type="button" aria-label="Close dialog">×</button>
+      </header>
+      <p class="dialog-description">Register as a patient to receive care and schedule appointments. All fields are required.</p>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="admit-first-name">First Name</label>
+          <input id="admit-first-name" name="first_name" type="text" required placeholder="e.g. John">
+        </div>
+        <div class="form-group">
+          <label for="admit-last-name">Last Name</label>
+          <input id="admit-last-name" name="last_name" type="text" required placeholder="e.g. Doe">
+        </div>
+        <div class="form-group">
+          <label for="admit-dob">Date of Birth</label>
+          <input id="admit-dob" name="date_of_birth" type="date" required>
+        </div>
+        <div class="form-group">
+          <label for="admit-gender">Gender</label>
+          <select id="admit-gender" name="gender" required>
+            <option value="">Select...</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="admit-phone">Phone Number</label>
+          <input id="admit-phone" name="phone" type="tel" required placeholder="e.g. 0412 345 678">
+        </div>
+        <div class="form-group">
+          <label for="admit-email">Email Address</label>
+          <input id="admit-email" name="email" type="email" required placeholder="e.g. john.doe@example.com">
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label for="admit-address">Residential Address</label>
+          <input id="admit-address" name="address" type="text" required placeholder="e.g. 123 Kogarah Rd, Kogarah NSW 2217">
+        </div>
+        <div class="form-group">
+          <label for="admit-emergency">Emergency Contact (Name & Phone)</label>
+          <input id="admit-emergency" name="emergency_contact" type="text" required placeholder="e.g. Jane Doe (0411 222 333)">
+        </div>
+        <div class="form-group">
+          <label for="admit-allergies">Known Allergies (if none, write 'None')</label>
+          <input id="admit-allergies" name="allergies" type="text" required placeholder="e.g. Penicillin, Peanuts">
+        </div>
+      </div>
+      
+      <p id="admission-status" class="form-status" role="alert"></p>
+      
+      <footer class="dialog-footer">
+        <button id="admission-dialog-cancel" class="button button--secondary" type="button">Cancel</button>
+        <button class="button button--primary" type="submit">Submit Admission</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Footer Informational Dialog -->
+  <dialog id="footer-modal" class="record-dialog" aria-labelledby="footer-modal-title">
+    <div class="dialog-content">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow" id="footer-modal-category">St George Hospital Information</p>
+          <h2 id="footer-modal-title">Clinical Service</h2>
+        </div>
+        <button id="footer-modal-close" class="icon-button" type="button" aria-label="Close dialog">×</button>
+      </header>
+      <div id="footer-modal-body" class="dialog-body" style="line-height: 1.6; color: var(--ink); margin-top: 16px;">
+        <!-- Dynamic content goes here -->
+      </div>
+      <footer class="dialog-footer" style="margin-top: 24px;">
+        <button id="footer-modal-ok" class="button button--primary" type="button">Close</button>
+      </footer>
+    </div>
   </dialog>
 
   <noscript>This application needs JavaScript enabled to run securely.</noscript>

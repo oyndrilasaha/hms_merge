@@ -2541,58 +2541,98 @@ textarea[aria-invalid="true"] {
 .public-footer {
   background: #0f172a;
   color: #94a3b8;
-  padding: 80px 0 25px;
+  padding: 80px 0 35px;
   border-top: 1px solid #1e293b;
 }
 
-.public-footer-inner {
+.public-footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.5fr;
-  gap: 40px;
+  grid-template-columns: 2.2fr repeat(6, 1fr);
+  gap: 30px;
   margin-bottom: 50px;
 }
 
-.footer-brand .brand-lockup--public span strong {
+.footer-brand-col .brand-lockup--public span strong {
   color: #ffffff;
 }
 
-.footer-brand .brand-lockup--public span small {
+.footer-brand-col .brand-lockup--public span small {
   color: #0891b2;
 }
 
-.footer-brand p {
-  font-size: 0.9rem;
-  line-height: 1.6;
+.footer-brand-col p.brand-desc {
+  font-size: 0.85rem;
+  line-height: 1.5;
   margin-top: 15px;
-  max-width: 320px;
+  max-width: 280px;
+  color: #94a3b8;
 }
 
-.footer-links-col h4 {
-  font-size: 0.95rem;
+.brand-hotline {
+  margin-top: 25px;
+  font-size: 0.85rem;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.brand-hotline strong {
+  color: #38bdf8;
+  font-size: 0.92rem;
+}
+
+.brand-hotline span {
+  color: #64748b;
+}
+
+.footer-links-column h4 {
+  font-size: 0.85rem;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 20px 0;
+  margin: 0 0 18px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.footer-links-col a, .footer-links-col p {
+.footer-links-column a {
   display: block;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   color: #94a3b8;
   text-decoration: none;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
   transition: color 0.15s ease;
+  line-height: 1.4;
 }
 
-.footer-links-col a:hover {
+.footer-links-column a:hover {
   color: #38bdf8;
 }
 
-.footer-bottom {
+.footer-bottom-new {
   border-top: 1px solid #1e293b;
   padding-top: 25px;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #475569;
+}
+
+@media (max-width: 1200px) {
+  .public-footer-grid {
+    grid-template-columns: 2fr repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .public-footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-footer-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Back to Home Button in Login */

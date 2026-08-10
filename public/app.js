@@ -134,7 +134,8 @@ function cacheElements() {
     'dialog-title', 'dialog-description', 'dialog-fields', 'dialog-status', 'dialog-submit',
     'dialog-close', 'dialog-cancel', 'toast-region',
     'chat-widget', 'chat-toggle', 'chat-drawer', 'chat-close',
-    'chat-messages', 'chat-form', 'chat-input'
+    'chat-messages', 'chat-form', 'chat-input',
+    'admission-dialog', 'admission-form', 'footer-modal'
   ];
   for (const id of ids) elements[toCamel(id)] = document.getElementById(id);
 }
@@ -184,6 +185,44 @@ function bindGlobalEvents() {
       closeProfileMenu();
     }
   });
+
+  // Search input Enter-key scroll down
+  elements.publicSearch?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
+  // Footer directory links interaction
+  document.querySelectorAll('[data-info-key]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const key = link.dataset.infoKey;
+      if (key === 'online-admission-form') {
+        elements.admissionDialog.showModal();
+        elements.admissionForm.reset();
+        document.getElementById('admission-status').textContent = '';
+      } else {
+        const info = FOOTER_INFO_DATABASE[key];
+        if (info) {
+          document.getElementById('footer-modal-category').textContent = info.category;
+          document.getElementById('footer-modal-title').textContent = info.title;
+          document.getElementById('footer-modal-body').textContent = info.content;
+          elements.footerModal.showModal();
+        }
+      }
+    });
+  });
+
+  // Admission Dialog controls
+  document.getElementById('admission-dialog-close')?.addEventListener('click', () => elements.admissionDialog.close());
+  document.getElementById('admission-dialog-cancel')?.addEventListener('click', () => elements.admissionDialog.close());
+  elements.admissionForm?.addEventListener('submit', handlePublicAdmissionSubmit);
+
+  // Footer Info Dialog controls
+  document.getElementById('footer-modal-close')?.addEventListener('click', () => elements.footerModal.close());
+  document.getElementById('footer-modal-ok')?.addEventListener('click', () => elements.footerModal.close());
 }
 
 async function restoreSession() {
@@ -1872,4 +1911,179 @@ function initPublicSearch() {
       elements.publicSearch.focus();
     }
   });
+}
+
+const FOOTER_INFO_DATABASE = {
+  'about-hospital': {
+    category: 'About Us',
+    title: 'About St George Hospital',
+    content: 'St George Hospital is a major accredited teaching hospital associated with the University of New South Wales (UNSW). As a Level 1 Trauma Centre and tertiary referral facility, we deliver premier clinical services to over 250,000 residents in Kogarah, southern Sydney, and surrounding regions.'
+  },
+  'history': {
+    category: 'About Us',
+    title: 'Our History & Heritage',
+    content: 'Established in 1894, St George Hospital has grown from a humble cottage medical house into one of the largest health campuses in New South Wales. For over 130 years, our team has pioneered cardiology treatments, trauma responses, and advanced surgical interventions.'
+  },
+  'executive-team': {
+    category: 'About Us',
+    title: 'Executive Leadership Team',
+    content: 'Our executive board is comprised of leading medical directors, nursing leaders, and healthcare operations specialists dedicated to maintaining clinical safety, professional accreditation, and high-reliability operations across the campus.'
+  },
+  'contact-us': {
+    category: 'About Us',
+    title: 'Contact Information',
+    content: 'General Enquiries: (02) 9113 1111 | Fax: (02) 9113 5000 | Location: Gray Street, Kogarah NSW 2217. In the event of a medical emergency, please dial 000 immediately or visit our 24/7 Emergency Department.'
+  },
+  'bariatric-surgery': {
+    category: 'Clinical Services',
+    title: 'Bariatric & Metabolic Surgery',
+    content: 'Our surgical suites are equipped for minimally invasive laparoscopic bariatric surgery, including gastric banding, bypass procedures, and metabolic assessments. All treatments are integrated with post-operative dietary and psychological care.'
+  },
+  'cardiology': {
+    category: 'Clinical Services',
+    title: 'Cardiology & Heart Care',
+    content: 'The St George Cardiology department is a center of excellence, offering state-of-the-art cardiac catheterization, arrhythmia management, cardiac rehabilitation, and acute coronary care.'
+  },
+  'oncology': {
+    category: 'Clinical Services',
+    title: 'Oncology & Chemotherapy',
+    content: 'We provide comprehensive cancer care services, including outpatient chemotherapy, medical oncology consults, clinical trials, and dedicated cancer care support.'
+  },
+  'orthopaedics': {
+    category: 'Clinical Services',
+    title: 'Orthopaedic Surgery',
+    content: 'Our orthopaedic surgeons specialize in joint replacements (hip, knee, shoulder), advanced trauma reconstruction, and sports medicine, supported by on-site physical therapists.'
+  },
+  'icu': {
+    category: 'Clinical Services',
+    title: 'Intensive Care Unit (ICU)',
+    content: 'The tertiary Intensive Care Unit at St George provides 24/7 advanced life support and intensive monitoring for critically ill medical and surgical patients, led by board-certified Intensivists.'
+  },
+  'research': {
+    category: 'Clinical Services',
+    title: 'Clinical Trials & Academic Research',
+    content: 'St George Hospital hosts numerous national and international clinical trials across oncology, intensive care, and cardiovascular health, bridging research discoveries directly to bedside patient care.'
+  },
+  'maternity-unit': {
+    category: 'Maternity Services',
+    title: 'Our Maternity & Birthing Unit',
+    content: 'Our modern maternity suites offer personalized care throughout your pregnancy, birth, and early parenting journey, featuring spacious labor wards, water birthing options, and special care nursery support.'
+  },
+  'maternity-education': {
+    category: 'Maternity Services',
+    title: 'Parenting & Maternity Education',
+    content: 'We offer interactive prenatal classes, breastfeeding workshops, baby care basics, and hospital tours to prepare parents for a safe and confident transition to parenthood.'
+  },
+  'pre-admission': {
+    category: 'For Patients',
+    title: 'Pre-Admission Information Guide',
+    content: 'Prior to your scheduled procedure, please complete your online admission details. Bring your Medicare card, private health fund details, active medications, and any recent clinical scan reports.'
+  },
+  'your-surgery': {
+    category: 'For Patients',
+    title: 'Preparing for Your Surgery',
+    content: 'Please observe the fasting instructions provided by your doctor. Shower prior to arrival, do not wear cosmetics or jewelry, and arrange for an authorized adult to escort you home after discharge.'
+  },
+  'patient-rights': {
+    category: 'For Patients',
+    title: 'Patient Rights & Responsibilities',
+    content: 'Under the Australian Charter of Healthcare Rights, you are entitled to safe and high-quality care, respect, clear communication, privacy, and the ability to raise questions or seek second opinions.'
+  },
+  'falls-prevention': {
+    category: 'For Patients',
+    title: 'Falls Prevention Program',
+    content: 'To prevent falls during your stay, keep personal items within easy reach, wear non-slip socks or footwear, use bedside handrails, and request assistance from nursing staff before walking if you feel dizzy.'
+  },
+  'privacy-policy': {
+    category: 'For Patients',
+    title: 'Patient Privacy & Health Records',
+    content: 'We handle your personal health information securely in accordance with the NSW Health Records and Information Privacy Act (HRIPA). Your clinical notes are restricted to authorized practitioners only.'
+  },
+  'parking': {
+    category: 'For Visitors',
+    title: 'Visitor Parking & Transit Rates',
+    content: 'On-site underground parking is available with ticket validation. Rates: First 30 mins free, 0.5–1 hr: $6.00, 1–2 hrs: $12.00, Max daily rate: $25.00. Concession passes are available for frequent visitors.'
+  },
+  'visiting-hours': {
+    category: 'For Visitors',
+    title: 'Visiting Hours & Guidelines',
+    content: 'Visiting hours are Daily from 10:00 AM – 8:00 PM. To protect patient recovery and prevent cross-infection, we request a limit of two visitors per bedside at a time. Sanitizer stations are at all ward entries.'
+  },
+  'public-transport': {
+    category: 'For Visitors',
+    title: 'Public Transport & Parking Directions',
+    content: 'The hospital is a short 8-minute walk from Kogarah Train Station. Multiple direct bus routes (e.g. 476, 477) stop directly outside Gray St and Belgrave St entries.'
+  },
+  'gp-referrals': {
+    category: 'For GPs',
+    title: 'GP Referral Guidelines',
+    content: 'GPs can refer patients directly to St George Specialist Outpatient Clinics by submitting referral letters via secure e-health systems (HealtLink ID: stgeorge) or secure faxing.'
+  },
+  'gp-education': {
+    category: 'For GPs',
+    title: 'GP Continuing Education & Events',
+    content: 'St George Hospital hosts monthly CPD-accredited education seminars for general practitioners, presenting clinical updates in orthopaedics, oncology breakthroughs, and cardiology referral paths.'
+  },
+  'health-education': {
+    category: 'Health Education',
+    title: 'Health Education & Wellness Programs',
+    content: 'We run community health classes, including diabetes management, cardiac wellness, respiratory rehabilitation, and nutrition guides to help you maintain health at home.'
+  },
+  'careers': {
+    category: 'Careers',
+    title: 'Careers & Work with Us',
+    content: 'Join our team of dedicated healthcare professionals. We offer competitive NSW Health salary packaging, active professional development, research funding, and a collaborative nursing and clinical culture.'
+  },
+  'volunteer': {
+    category: 'Careers',
+    title: 'Volunteer Services',
+    content: 'Our hospital volunteers provide compassionate support, including ward navigation, patient companionship, reading programs, and organizing hospital flower and gift stalls.'
+  }
+};
+
+async function handlePublicAdmissionSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const statusEl = document.getElementById('admission-status');
+  statusEl.textContent = 'Submitting your admission form...';
+  statusEl.style.color = 'var(--ink-soft)';
+
+  const payload = {
+    firstName: form.elements.first_name.value.trim(),
+    lastName: form.elements.last_name.value.trim(),
+    dateOfBirth: form.elements.date_of_birth.value,
+    gender: form.elements.gender.value,
+    phone: form.elements.phone.value.trim(),
+    email: form.elements.email.value.trim(),
+    address: form.elements.address.value.trim(),
+    emergencyContact: form.elements.emergency_contact.value.trim(),
+    allergies: form.elements.allergies.value.trim(),
+  };
+
+  try {
+    const response = await apiRequest('/api/public/admission', {
+      method: 'POST',
+      body: payload,
+      allowUnauthenticated: true
+    });
+    
+    // Successful self-admission!
+    elements.admissionDialog.close();
+    
+    // Show confirmation modal
+    document.getElementById('footer-modal-category').textContent = 'Admission Successful 🎉';
+    document.getElementById('footer-modal-title').textContent = `Welcome, ${response.firstName} ${response.lastName}`;
+    document.getElementById('footer-modal-body').innerHTML = `
+      <div style="background: var(--teal-50); border: 1px solid var(--teal-200); padding: 16px; border-radius: 8px; margin-bottom: 16px; color: var(--teal-950); font-family: inherit;">
+        <p style="margin: 0 0 8px; font-weight: 600;">Globally Unique Patient Number (MRN):</p>
+        <code style="font-size: 1.5rem; font-weight: 700; color: var(--teal-800); letter-spacing: 0.1em; display: block; text-align: center; margin: 8px 0; background: #fff; padding: 8px; border-radius: 4px; border: 1px dashed var(--teal-400);">${escapeHtml(response.medicalRecordNumber)}</code>
+        <p style="margin: 0; font-size: 0.875rem;">Please keep this number secure. You will need it to sign in to the patient portal and schedule your upcoming appointments.</p>
+      </div>
+      <p>Your electronic health record has been initialized at <strong>St George Hospital (Kogarah Campus)</strong>. Welcome to our care network.</p>
+    `;
+    elements.footerModal.showModal();
+  } catch (err) {
+    statusEl.textContent = err.message;
+    statusEl.style.color = 'var(--red-700)';
+  }
 }
