@@ -532,36 +532,36 @@
       </div>
       <section id="page-content" aria-live="polite" aria-busy="false"></section>
     </main>
+  </div>
 
-    <!-- Interactive Chatbot Assistant -->
-    <div id="chat-widget" class="chat-widget">
-      <button id="chat-toggle" class="chat-toggle-btn" type="button" aria-label="Open care assistant">
-        <svg><use href="#icon-clinical"></use></svg>
-      </button>
-      <div id="chat-drawer" class="chat-drawer" hidden>
-        <header class="chat-header">
-          <div>
-            <h3>Care Assistant</h3>
-            <p>St George HMS Guide</p>
-          </div>
-          <button id="chat-close" class="chat-close-btn" type="button" aria-label="Close assistant">×</button>
-        </header>
-        <div id="chat-messages" class="chat-messages">
-          <div class="chat-msg chat-msg--assistant">
-            <p>Hello! I am your St George Care Assistant. I can help guide you through patients, appointments, billing, or clinical workflows. Select a topic or ask a question below!</p>
-          </div>
-          <div class="chat-suggestions">
-            <button class="chat-suggestion-chip" type="button">How do I register a patient?</button>
-            <button class="chat-suggestion-chip" type="button">How do I cancel an appointment?</button>
-            <button class="chat-suggestion-chip" type="button">Who can record clinical notes?</button>
-            <button class="chat-suggestion-chip" type="button">How can I export CSV data?</button>
-          </div>
+  <!-- Interactive Chatbot Assistant -->
+  <div id="chat-widget" class="chat-widget">
+    <button id="chat-toggle" class="chat-toggle-btn" type="button" aria-label="Open care assistant">
+      <svg><use href="#icon-clinical"></use></svg>
+    </button>
+    <div id="chat-drawer" class="chat-drawer" hidden>
+      <header class="chat-header">
+        <div>
+          <h3>Care Assistant</h3>
+          <p>St George HMS Guide</p>
         </div>
-        <form id="chat-form" class="chat-form">
-          <input id="chat-input" type="text" placeholder="Type a message..." autocomplete="off" required>
-          <button class="button button--primary" type="submit" style="padding: 0 12px; height: 36px; min-height: 36px; font-size: 13px;">Send</button>
-        </form>
+        <button id="chat-close" class="chat-close-btn" type="button" aria-label="Close assistant">×</button>
+      </header>
+      <div id="chat-messages" class="chat-messages">
+        <div class="chat-msg chat-msg--assistant">
+          <p>Hello! I am your St George Care Assistant. I can help guide you through patients, appointments, billing, or clinical workflows. Select a topic or ask a question below!</p>
+        </div>
+        <div class="chat-suggestions">
+          <button class="chat-suggestion-chip" type="button">How do I register a patient?</button>
+          <button class="chat-suggestion-chip" type="button">How do I cancel an appointment?</button>
+          <button class="chat-suggestion-chip" type="button">Who can record clinical notes?</button>
+          <button class="chat-suggestion-chip" type="button">How can I export CSV data?</button>
+        </div>
       </div>
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" type="text" placeholder="Type a message..." autocomplete="off" required>
+        <button class="button button--primary" type="submit" style="padding: 0 12px; height: 36px; min-height: 36px; font-size: 13px;">Send</button>
+      </form>
     </div>
   </div>
 
