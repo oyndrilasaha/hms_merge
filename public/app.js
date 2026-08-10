@@ -1416,17 +1416,32 @@ function validateForm(form) {
 }
 
 async function apiRequest(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+
+  // Queue write actions locally if offline
+  if (!navigator.onLine && !['GET', 'HEAD'].includes(method)) {
+    try {
+      const queue = JSON.parse(localStorage.getItem('st_george_hms_sync_queue') || '[]');
+      queue.push({ url, method, body: options.body });
+      localStorage.setItem('st_george_hms_sync_queue', JSON.stringify(queue));
+      showToast('Offline mode active. Your update has been queued locally.', 'warning');
+      return { success: true, queued: true };
+    } catch (_) {
+      // Fallback if localStorage is full or disabled
+    }
+  }
+
   const headers = new Headers(options.headers || {});
   headers.set('Accept', 'application/json');
   if (options.body !== undefined) headers.set('Content-Type', 'application/json');
-  if (state.csrfToken && !['GET', 'HEAD'].includes((options.method || 'GET').toUpperCase())) {
+  if (state.csrfToken && !['GET', 'HEAD'].includes(method)) {
     headers.set('X-CSRF-Token', state.csrfToken);
   }
 
   let response;
   try {
     response = await fetch(url, {
-      method: options.method || 'GET',
+      method,
       headers,
       credentials: 'same-origin',
       cache: 'no-store',
@@ -1538,6 +1553,41 @@ function updateNetworkStatus() {
   elements.networkStatus.classList.toggle('network-status--offline', !online);
   elements.networkStatus.querySelector('span').textContent = online ? 'Online' : 'Offline';
   elements.networkStatus.title = online ? 'Connected to the network' : 'Offline — read-only app shell available';
+  if (online) {
+    syncOfflineActions();
+  }
+}
+
+async function syncOfflineActions() {
+  let queue = [];
+  try {
+    queue = JSON.parse(localStorage.getItem('st_george_hms_sync_queue') || '[]');
+  } catch (_) {
+    queue = [];
+  }
+  if (queue.length === 0) return;
+
+  localStorage.removeItem('st_george_hms_sync_queue');
+  showToast(`Syncing ${queue.length} offline updates…`, 'info');
+
+  let successCount = 0;
+  for (const item of queue) {
+    try {
+      await apiRequest(item.url, {
+        method: item.method,
+        body: item.body,
+        allowUnauthenticated: true
+      });
+      successCount++;
+    } catch (err) {
+      console.error('Failed to sync action:', item, err);
+    }
+  }
+
+  if (successCount > 0) {
+    showToast(`Successfully synced ${successCount} offline updates with the server.`, 'success');
+    handleHashChange();
+  }
 }
 
 async function installApplication() {
