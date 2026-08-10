@@ -1793,6 +1793,9 @@ function getAssistantReply(text) {
     return "Hello! I am your St George Care Assistant. I am here to help guide you on using this Hospital Management System. Select one of the quick suggestions or ask a question below!";
   }
   
+  return "I'm sorry, I didn't quite capture that. Try asking about patient registration, booking appointments, billing/invoices, clinical notes, CSV exports, or select one of the suggested topics below.";
+}
+  
 function initPublicSearch() {
   if (!elements.publicSearch) return;
 

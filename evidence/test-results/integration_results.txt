@@ -2,18 +2,28 @@
 > st-george-hospital-management-system@0.1.0 test
 > node --test --test-reporter=spec
 
-✔ T-AUTH-01: login, session cookie, current user, expiry and logout (735.146209ms)
-✔ T-AUTH-02: seeded passwords are salted slow hashes and verify safely (1335.596459ms)
-✔ T-RBAC-01 / T-CSRF-01: mutations reject missing CSRF and forbidden roles (662.00375ms)
-✔ T-PAT-01: receptionist creates a validated patient and unique MRN (531.208958ms)
-✔ T-APT-01 / T-APT-02: doctor books an appointment and overlap is atomic 409 (521.644666ms)
-✔ T-CLN-01: doctor appends an attributed clinical note (518.268125ms)
-✔ T-LAB-01: doctor order flows to a lab-technician result (580.38225ms)
-✔ T-PHM-01 / T-PHM-02: dispensing decrements stock and rejects unsafe batches (519.191333ms)
-✔ T-BIL-01: invoice totals and payment-derived status remain consistent (515.804291ms)
-✔ T-AUD-01: failed authentication and material writes retain actor/object/time evidence (625.995791ms)
-✔ T-SCOPE-01: a patient sees only their own records (540.041542ms)
-✔ T-PWA-01: static shell, manifest, worker and icons are served with security headers (468.606792ms)
-✔ T-PAT-02: modify patient details via PATCH /api/patients/:id (532.107666ms)
-✔ T-APT-03: modify/cancel appointment via PATCH /api/appointments/:id (514.073417ms)
-✔ T-EXPORT-01: CSV export frontend markup and button exist in toolbar helper (3463.092875ms)
+✔ T-AUTH-01: login, session cookie, current user, expiry and logout (718.317834ms)
+✔ T-AUTH-02: seeded passwords are salted slow hashes and verify safely (1289.74025ms)
+✔ T-RBAC-01 / T-CSRF-01: mutations reject missing CSRF and forbidden roles (613.79525ms)
+✔ T-PAT-01: receptionist creates a validated patient and unique MRN (501.705083ms)
+✔ T-APT-01 / T-APT-02: doctor books an appointment and overlap is atomic 409 (498.802584ms)
+✔ T-CLN-01: doctor appends an attributed clinical note (505.895875ms)
+✔ T-LAB-01: doctor order flows to a lab-technician result (559.631125ms)
+✔ T-PHM-01 / T-PHM-02: dispensing decrements stock and rejects unsafe batches (519.450917ms)
+✔ T-BIL-01: invoice totals and payment-derived status remain consistent (498.327208ms)
+✔ T-AUD-01: failed authentication and material writes retain actor/object/time evidence (602.506ms)
+✔ T-SCOPE-01: a patient sees only their own records (551.405708ms)
+✔ T-PWA-01: static shell, manifest, worker and icons are served with security headers (3454.800417ms)
+✔ T-PAT-02: modify patient details via PATCH /api/patients/:id (497.65175ms)
+✔ T-APT-03: modify/cancel appointment via PATCH /api/appointments/:id (496.277667ms)
+✔ T-EXPORT-01: CSV export frontend markup and button exist in toolbar helper (3443.436833ms)
+✔ T-CHAT-01: care assistant chatbot drawer is served in the layout and bundle (3441.335708ms)
+✔ T-PUBLIC-01: public hospital homepage, doctor directory and portal gateway are served (3445.406291ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 21763.86225
