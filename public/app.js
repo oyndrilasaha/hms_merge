@@ -2058,6 +2058,7 @@ async function handlePublicAdmissionSubmit(event) {
     address: form.elements.address.value.trim(),
     emergencyContact: form.elements.emergency_contact.value.trim(),
     allergies: form.elements.allergies.value.trim(),
+    password: form.elements.password.value,
   };
 
   try {

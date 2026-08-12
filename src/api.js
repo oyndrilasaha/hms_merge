@@ -274,21 +274,31 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
       || [body.emergencyContactName, body.emergencyContactPhone].filter(Boolean).join(' – ').slice(0, 200)
       || null;
     const allergies = stringField(body, 'allergies', { max: 500, label: 'Allergies' });
+    const password = stringField(body, 'password', { required: true, min: 8, max: 200, label: 'Password' });
     const branchId = 1;
 
     const patient = withTransaction(db, () => {
+      const userId = Number(db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS id FROM users').get().id);
       const id = Number(db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS id FROM patients').get().id);
       const mrn = `SGH-${String(id).padStart(6, '0')}`;
+      const credentials = hashPassword(password);
+
+      db.prepare(`
+        INSERT INTO users (id, username, full_name, email, password_hash, password_salt, role, branch_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(userId, mrn, `${firstName} ${lastName}`, email, credentials.hash, credentials.salt, 'Patient', branchId);
+
       db.prepare(`
         INSERT INTO patients
-          (id, medical_record_number, branch_id, first_name, last_name, date_of_birth,
+          (id, medical_record_number, user_id, branch_id, first_name, last_name, date_of_birth,
            gender, phone, email, address, emergency_contact, allergies, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        id, mrn, branchId, firstName, lastName, dateOfBirth, gender,
-        phone, email, address, emergencyContact, allergies, 0
+        id, mrn, userId, branchId, firstName, lastName, dateOfBirth, gender,
+        phone, email, address, emergencyContact, allergies, userId
       );
-      log(req, null, 'PATIENT_REGISTERED', 'patient', id, { medicalRecordNumber: mrn, branchId });
+
+      log(req, { id: userId, branch_id: branchId }, 'PATIENT_REGISTERED', 'patient', id, { medicalRecordNumber: mrn, branchId });
       return db.prepare('SELECT * FROM patients WHERE id = ?').get(id);
     });
     sendData(res, camelize(patient), 201);

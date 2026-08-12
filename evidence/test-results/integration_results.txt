@@ -2,23 +2,23 @@
 > st-george-hospital-management-system@0.1.0 test
 > node --test --test-reporter=spec
 
-✔ T-AUTH-01: login, session cookie, current user, expiry and logout (733.529125ms)
-✔ T-AUTH-02: seeded passwords are salted slow hashes and verify safely (1339.24925ms)
-✔ T-RBAC-01 / T-CSRF-01: mutations reject missing CSRF and forbidden roles (633.965334ms)
-✔ T-PAT-01: receptionist creates a validated patient and unique MRN (516.187459ms)
-✔ T-APT-01 / T-APT-02: doctor books an appointment and overlap is atomic 409 (510.344292ms)
-✔ T-CLN-01: doctor appends an attributed clinical note (523.653209ms)
-✔ T-LAB-01: doctor order flows to a lab-technician result (576.658791ms)
-✔ T-PHM-01 / T-PHM-02: dispensing decrements stock and rejects unsafe batches (521.322542ms)
-✔ T-BIL-01: invoice totals and payment-derived status remain consistent (638.514458ms)
-✔ T-AUD-01: failed authentication and material writes retain actor/object/time evidence (634.318042ms)
-✔ T-SCOPE-01: a patient sees only their own records (530.353958ms)
-✔ T-PWA-01: static shell, manifest, worker and icons are served with security headers (472.359541ms)
-✔ T-PAT-02: modify patient details via PATCH /api/patients/:id (527.765792ms)
-✔ T-APT-03: modify/cancel appointment via PATCH /api/appointments/:id (531.758583ms)
-✔ T-EXPORT-01: CSV export frontend markup and button exist in toolbar helper (3462.850875ms)
-✔ T-CHAT-01: care assistant chatbot drawer is served in the layout and bundle (3467.955625ms)
-✔ T-PUBLIC-01: public hospital homepage, doctor directory and portal gateway are served (3480.642375ms)
+✔ T-AUTH-01: login, session cookie, current user, expiry and logout (708.280625ms)
+✔ T-AUTH-02: seeded passwords are salted slow hashes and verify safely (1306.310041ms)
+✔ T-RBAC-01 / T-CSRF-01: mutations reject missing CSRF and forbidden roles (631.669916ms)
+✔ T-PAT-01: receptionist creates a validated patient and unique MRN (515.461ms)
+✔ T-APT-01 / T-APT-02: doctor books an appointment and overlap is atomic 409 (509.680209ms)
+✔ T-CLN-01: doctor appends an attributed clinical note (513.401167ms)
+✔ T-LAB-01: doctor order flows to a lab-technician result (573.054958ms)
+✔ T-PHM-01 / T-PHM-02: dispensing decrements stock and rejects unsafe batches (517.094625ms)
+✔ T-BIL-01: invoice totals and payment-derived status remain consistent (507.135833ms)
+✔ T-AUD-01: failed authentication and material writes retain actor/object/time evidence (620.734459ms)
+✔ T-SCOPE-01: a patient sees only their own records (516.477ms)
+✔ T-PWA-01: static shell, manifest, worker and icons are served with security headers (466.65025ms)
+✔ T-PAT-02: modify patient details via PATCH /api/patients/:id (510.369792ms)
+✔ T-APT-03: modify/cancel appointment via PATCH /api/appointments/:id (515.919834ms)
+✔ T-EXPORT-01: CSV export frontend markup and button exist in toolbar helper (3458.182417ms)
+✔ T-CHAT-01: care assistant chatbot drawer is served in the layout and bundle (3476.118ms)
+✔ T-PUBLIC-01: public hospital homepage, doctor directory and portal gateway are served (577.018417ms)
 ℹ tests 17
 ℹ suites 0
 ℹ pass 17
@@ -26,4 +26,4 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 19226.066958
+ℹ duration_ms 16051.279416
