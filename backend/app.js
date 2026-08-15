@@ -6,7 +6,7 @@ const { createApi } = require('./api');
 const { openDatabase } = require('./database');
 const { ApiError, securityHeaders, sendError } = require('./http-utils');
 
-const DEFAULT_PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
+const DEFAULT_PUBLIC_DIR = path.resolve(__dirname, '..', 'frontend');
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
