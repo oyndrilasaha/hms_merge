@@ -589,7 +589,8 @@ function renderClinical() {
       <header class="panel-header"><div><h2>Laboratory orders</h2><p>Requests and result status</p></div></header>
       ${state.labOrders.length ? `<div class="table-scroll">${labOrdersTable(state.labOrders)}</div>` : emptyState('clinical', 'No laboratory orders', 'Create a lab request to begin the diagnostic workflow.')}
     </section>
-  </div>`;
+  </div>
+  ${renderSteganographyPanel()}`;
 }
 
 function clinicalNotesTable(notes) {
@@ -2088,3 +2089,228 @@ async function handlePublicAdmissionSubmit(event) {
     statusEl.style.color = 'var(--red-700)';
   }
 }
+
+// AES/LSB Steganography Implementation
+function drawStGeorgeLogo(canvas) {
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#f0fdfa'; // mint background
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw a cyan shield/circle
+  ctx.fillStyle = '#0891b2'; // clinical teal
+  ctx.beginPath();
+  ctx.arc(canvas.width / 2, canvas.height / 2 - 10, 40, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw a white cross
+  ctx.fillStyle = '#ffffff';
+  // horizontal
+  ctx.fillRect(canvas.width / 2 - 25, canvas.height / 2 - 15, 50, 10);
+  // vertical
+  ctx.fillRect(canvas.width / 2 - 5, canvas.height / 2 - 35, 10, 50);
+
+  // Label
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText("ST GEORGE HOSPITAL", canvas.width / 2, canvas.height - 22);
+  ctx.font = '7px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText("SECURE MEDICAL SHARE", canvas.width / 2, canvas.height - 8);
+}
+
+window.switchStegoTab = function(tab) {
+  document.querySelectorAll('.stego-view').forEach(el => el.hidden = true);
+  document.getElementById(`stego-view-${tab}`).hidden = false;
+
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('tab-button--active');
+    btn.style.color = 'var(--ink-soft)';
+    btn.style.borderBottomColor = 'transparent';
+  });
+
+  const activeBtn = document.getElementById(`stego-tab-${tab}-btn`);
+  activeBtn.classList.add('tab-button--active');
+  activeBtn.style.color = 'var(--clinical-teal)';
+  activeBtn.style.borderBottomColor = 'var(--clinical-teal)';
+};
+
+window.handleStegoEmbed = async function(event) {
+  event.preventDefault();
+  const select = document.getElementById('stego-patient-id');
+  const message = document.getElementById('stego-message').value.trim();
+  const password = document.getElementById('stego-password-embed').value;
+
+  if (!message || !password) return;
+
+  const originalText = `Patient: ${select.options[select.selectedIndex].text}\nReport: ${message}`;
+  
+  try {
+    showToast("Encrypting report via AES-256...", "info");
+    const response = await apiRequest('/api/clinical/stego/encrypt', {
+      method: 'POST',
+      body: { plaintext: originalText, password }
+    });
+
+    const { ciphertext, salt, iv } = response;
+
+    // Display Hex payload
+    const hexDisplay = document.getElementById('stego-hex-display');
+    hexDisplay.textContent = ciphertext;
+
+    // Build Canvas LSB
+    const canvas = document.getElementById('stego-canvas');
+    drawStGeorgeLogo(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const payloadString = JSON.stringify({ ciphertext, salt, iv });
+
+    // String to bits
+    const bits = [];
+    for (let i = 0; i < payloadString.length; i++) {
+      const code = payloadString.charCodeAt(i);
+      for (let b = 7; b >= 0; b--) {
+        bits.push((code >> b) & 1);
+      }
+    }
+    // Terminator
+    for (let i = 0; i < 16; i++) {
+      bits.push(0);
+    }
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+
+    if (bits.length > data.length) {
+      showToast("Clinical report is too long for this logo space!", "error");
+      return;
+    }
+
+    // Embed bits into LSB of RGB channels
+    for (let i = 0; i < bits.length; i++) {
+      const index = i + Math.floor(i / 3);
+      if (index >= data.length) break;
+      data[index] = (data[index] & 0xFE) | bits[i];
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+
+    // Download Button href
+    const downloadBtn = document.getElementById('stego-download-btn');
+    downloadBtn.href = canvas.toDataURL('image/png');
+
+    document.getElementById('stego-embed-output').hidden = false;
+    showToast("LSB Stego-image generated successfully!", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+};
+
+window.loadStegoUpload = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  document.getElementById('stego-filename').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.getElementById('stego-canvas');
+      if (!canvas) {
+        showToast("Error: Embed a stego-image first to initialize the canvas context.", "error");
+        return;
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      showToast("Stego-image uploaded and loaded into canvas.", "success");
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.loadLastStegoCanvas = function() {
+  const canvas = document.getElementById('stego-canvas');
+  if (!canvas || document.getElementById('stego-embed-output').hidden === true) {
+    showToast("Please generate a stego-image first using the 'Hide' tab.", "info");
+    return;
+  }
+  showToast("Loaded last generated canvas for testing.", "success");
+};
+
+window.handleStegoExtract = async function() {
+  const canvas = document.getElementById('stego-canvas');
+  const password = document.getElementById('stego-password-extract').value;
+
+  if (!canvas) return;
+
+  try {
+    showToast("Scanning pixel arrays for hidden LSB data...", "info");
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    const extractedBits = [];
+
+    let consecutiveZeros = 0;
+    for (let i = 0; i < data.length; i++) {
+      const index = i + Math.floor(i / 3);
+      if (index >= data.length) break;
+
+      const bit = data[index] & 1;
+      extractedBits.push(bit);
+
+      if (bit === 0) {
+        consecutiveZeros++;
+      } else {
+        consecutiveZeros = 0;
+      }
+
+      if (consecutiveZeros === 16) {
+        extractedBits.splice(-16);
+        break;
+      }
+    }
+
+    if (extractedBits.length === 0) {
+      showToast("No steganography payload found in this image.", "error");
+      return;
+    }
+
+    const bytes = [];
+    for (let i = 0; i < extractedBits.length; i += 8) {
+      let byte = 0;
+      for (let b = 0; b < 8; b++) {
+        if (i + b < extractedBits.length) {
+          byte = (byte << 1) | extractedBits[i + b];
+        }
+      }
+      bytes.push(byte);
+    }
+
+    const decodedString = String.fromCharCode(...bytes);
+    let parsed;
+    try {
+      parsed = JSON.parse(decodedString);
+    } catch {
+      showToast("Extracted data is corrupt or not in correct format.", "error");
+      return;
+    }
+
+    const { ciphertext, salt, iv } = parsed;
+
+    showToast("Decrypting AES-256 payload...", "info");
+    const response = await apiRequest('/api/clinical/stego/decrypt', {
+      method: 'POST',
+      body: { ciphertext, salt, iv, password }
+    });
+
+    const outputEl = document.getElementById('stego-extract-output');
+    const textEl = document.getElementById('stego-recovered-text');
+    textEl.textContent = response.plaintext;
+    outputEl.hidden = false;
+    showToast("Secure medical report decrypted successfully!", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+};

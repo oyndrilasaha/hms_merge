@@ -535,6 +535,49 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     sendData(res, { items: camelize(rows) });
   }
 
+  async function encryptStego(req, res, session) {
+    requireRole(req, session, ['Admin', 'Doctor', 'Nurse', 'Lab Technician']);
+    const body = await readJson(req);
+    const plaintext = stringField(body, 'plaintext', { required: true, max: 5000, label: 'Plaintext message' });
+    const password = stringField(body, 'password', { required: true, min: 4, max: 200, label: 'Passphrase' });
+
+    const crypto = require('node:crypto');
+    const salt = crypto.randomBytes(16);
+    const key = crypto.scryptSync(password, salt, 32);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+
+    sendData(res, {
+      ciphertext: encrypted,
+      salt: salt.toString('hex'),
+      iv: iv.toString('hex')
+    }, 200);
+  }
+
+  async function decryptStego(req, res, session) {
+    requireRole(req, session, ['Admin', 'Doctor', 'Nurse', 'Lab Technician']);
+    const body = await readJson(req);
+    const ciphertext = stringField(body, 'ciphertext', { required: true, label: 'Ciphertext hex' });
+    const saltHex = stringField(body, 'salt', { required: true, label: 'Salt hex' });
+    const ivHex = stringField(body, 'iv', { required: true, label: 'IV hex' });
+    const password = stringField(body, 'password', { required: true, label: 'Passphrase' });
+
+    const crypto = require('node:crypto');
+    try {
+      const salt = Buffer.from(saltHex, 'hex');
+      const iv = Buffer.from(ivHex, 'hex');
+      const key = crypto.scryptSync(password, salt, 32);
+      const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+      let decrypted = decipher.update(ciphertext, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      sendData(res, { plaintext: decrypted }, 200);
+    } catch (err) {
+      throw new ApiError(400, 'DECRYPTION_FAILED', 'Failed to decrypt ciphertext. Please check your security passphrase.');
+    }
+  }
+
   async function createClinicalNote(req, res, session) {
     requireRole(req, session, ['Admin', 'Doctor', 'Nurse']);
     const body = await readJson(req);
@@ -1280,6 +1323,14 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     }
     if (req.method === 'GET' && url.pathname === '/api/dashboard') {
       getDashboard(req, res, url, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/clinical/stego/encrypt') {
+      await encryptStego(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/clinical/stego/decrypt') {
+      await decryptStego(req, res, session);
       return true;
     }
 
