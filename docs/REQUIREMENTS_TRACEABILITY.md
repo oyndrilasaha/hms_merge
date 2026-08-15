@@ -34,7 +34,7 @@ These IDs are stable documentation labels. Link each to the exact automated test
 
 | ID | MVP status | Endpoint/UI implementation | Required evidence |
 |---|---|---|---|
-| FR1 | Planned | No public/self-service registration; assessment users are seeded. | Future registration validation tests |
+| FR1 | Implemented | Public self-service registration is available via the Online Admission Form on the homepage, allowing patients to set passwords and auto-generating their login MRN. | Public registration submission flow, success modal |
 | FR2 | Implemented | `POST /api/auth/login`; login form uses a generic failure message. | `T-AUTH-01`, `EV-UI-01` |
 | FR3 | Implemented | Seeded passwords are stored using a salted built-in password derivation function, never plaintext. | `T-AUTH-02`, source/hash inspection |
 | FR4 | Implemented | `GET /api/dashboard` and the signed-in dashboard expose role-appropriate modules/metrics. | `T-AUTH-01`, `T-RBAC-01`, `EV-UI-02` |
