@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS branches (
   name TEXT NOT NULL,
   address TEXT NOT NULL,
   phone TEXT NOT NULL,
+  departments_json TEXT DEFAULT '["General Medicine", "Cardiology", "Pediatrics", "Emergency", "Orthopedics"]',
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
@@ -21,6 +22,9 @@ CREATE TABLE IF NOT EXISTS users (
     'Admin', 'Doctor', 'Nurse', 'Receptionist', 'Lab Technician',
     'Pharmacist', 'Branch Manager', 'Patient'
   )),
+  specialisation TEXT,
+  phone TEXT,
+  mfa_enabled INTEGER NOT NULL DEFAULT 0 CHECK (mfa_enabled IN (0, 1)),
   branch_id INTEGER REFERENCES branches(id),
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
@@ -195,6 +199,99 @@ CREATE TABLE IF NOT EXISTS feedbacks (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+CREATE TABLE IF NOT EXISTS schedules (
+  id INTEGER PRIMARY KEY,
+  staff_id INTEGER NOT NULL REFERENCES users(id),
+  branch_id INTEGER NOT NULL REFERENCES branches(id),
+  day_of_week TEXT NOT NULL CHECK (day_of_week IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')),
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  slot_duration_mins INTEGER NOT NULL DEFAULT 30,
+  active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS shifts (
+  id INTEGER PRIMARY KEY,
+  staff_id INTEGER NOT NULL REFERENCES users(id),
+  branch_id INTEGER NOT NULL REFERENCES branches(id),
+  shift_date TEXT NOT NULL,
+  shift_type TEXT NOT NULL CHECK (shift_type IN ('Morning', 'Afternoon', 'Night', 'On-Call')),
+  status TEXT NOT NULL DEFAULT 'Scheduled' CHECK (status IN ('Scheduled', 'Completed', 'Absent', 'Cancelled')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS attendance (
+  id INTEGER PRIMARY KEY,
+  staff_id INTEGER NOT NULL REFERENCES users(id),
+  shift_id INTEGER REFERENCES shifts(id),
+  clock_in TEXT NOT NULL,
+  clock_out TEXT,
+  status TEXT NOT NULL DEFAULT 'Present' CHECK (status IN ('Present', 'Late', 'Half Day', 'On Leave'))
+);
+
+CREATE TABLE IF NOT EXISTS purchase_orders (
+  id INTEGER PRIMARY KEY,
+  po_number TEXT NOT NULL UNIQUE,
+  branch_id INTEGER NOT NULL REFERENCES branches(id),
+  medication_id INTEGER NOT NULL REFERENCES medications(id),
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  status TEXT NOT NULL DEFAULT 'Draft' CHECK (status IN ('Draft', 'Pending Approval', 'Approved', 'Fulfilled', 'Cancelled')),
+  ordered_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  recipient_user_id INTEGER REFERENCES users(id),
+  recipient_contact TEXT,
+  channel TEXT NOT NULL CHECK (channel IN ('Email', 'SMS', 'In-App')),
+  template TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'Sent' CHECK (status IN ('Queued', 'Sent', 'Failed')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS beds (
+  id INTEGER PRIMARY KEY,
+  branch_id INTEGER NOT NULL REFERENCES branches(id),
+  ward TEXT NOT NULL,
+  room_number TEXT NOT NULL,
+  bed_number TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'Available' CHECK (status IN ('Available', 'Occupied', 'Maintenance', 'Reserved')),
+  UNIQUE (branch_id, ward, room_number, bed_number)
+);
+
+CREATE TABLE IF NOT EXISTS admissions (
+  id INTEGER PRIMARY KEY,
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  branch_id INTEGER NOT NULL REFERENCES branches(id),
+  bed_id INTEGER REFERENCES beds(id),
+  attending_doctor_id INTEGER REFERENCES users(id),
+  admission_reason TEXT NOT NULL,
+  admitted_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  discharged_at TEXT,
+  discharge_summary TEXT,
+  status TEXT NOT NULL DEFAULT 'Admitted' CHECK (status IN ('Admitted', 'Transferred', 'Discharged'))
+);
+
+CREATE TABLE IF NOT EXISTS patient_consents (
+  id INTEGER PRIMARY KEY,
+  patient_id INTEGER NOT NULL REFERENCES patients(id),
+  purpose TEXT NOT NULL,
+  notice_version TEXT NOT NULL DEFAULT '1.0',
+  status TEXT NOT NULL DEFAULT 'Granted' CHECK (status IN ('Granted', 'Withdrawn')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS backup_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  backup_type TEXT NOT NULL DEFAULT 'Full Automated',
+  status TEXT NOT NULL DEFAULT 'Completed' CHECK (status IN ('Completed', 'Failed', 'Restore Test Passed')),
+  file_name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_users_branch_role ON users(branch_id, role);
 CREATE INDEX IF NOT EXISTS idx_patients_branch_name ON patients(branch_id, last_name, first_name);
 CREATE INDEX IF NOT EXISTS idx_appointments_doctor_time ON appointments(doctor_user_id, starts_at, ends_at);
@@ -207,3 +304,8 @@ CREATE INDEX IF NOT EXISTS idx_invoices_patient_status ON invoices(patient_id, s
 CREATE INDEX IF NOT EXISTS idx_payments_invoice ON payments(invoice_id, paid_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_audit_branch_time ON audit_logs(branch_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_schedules_staff ON schedules(staff_id, day_of_week);
+CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(branch_id, shift_date);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_user_id, status);
+CREATE INDEX IF NOT EXISTS idx_beds_branch_status ON beds(branch_id, status);
+

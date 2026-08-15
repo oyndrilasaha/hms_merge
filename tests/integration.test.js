@@ -558,6 +558,76 @@ test('T-PUBLIC-01: public hospital homepage, doctor directory and portal gateway
   assert.match(appJs.text, /initPublicSearch/);
 });
 
+test('T-ADMIN-01: admin creates a new staff account and new hospital branch', async (t) => {
+  const { request, login } = await startTestServer(t);
+  const admin = await login('admin', 'DemoPass!2026');
+
+  // Create branch (FR6)
+  const branchRes = await request('/api/admin/branches', {
+    method: 'POST',
+    session: admin,
+    json: { code: 'WOL', name: 'St George Wollongong Clinic', address: '12 Crown St', phone: '02 4200 1111' }
+  });
+  assert.equal(branchRes.status, 201);
+  assert.equal(branchRes.payload.data.code, 'WOL');
+
+  // Create user (FR5, FR8, FR21)
+  const userRes = await request('/api/admin/users', {
+    method: 'POST',
+    session: admin,
+    json: {
+      username: 'drsmith',
+      fullName: 'Dr Sarah Smith',
+      email: 'drsmith@demo.stgeorge.local',
+      password: 'DemoPass!2026',
+      role: 'Doctor',
+      branchId: branchRes.payload.data.id,
+      specialisation: 'Cardiology'
+    }
+  });
+  assert.equal(userRes.status, 201);
+  assert.equal(userRes.payload.data.specialisation, 'Cardiology');
+});
+
+test('T-GATEWAY-01: process sandboxed electronic payment via payment gateway', async (t) => {
+  const { request, login } = await startTestServer(t);
+  const admin = await login('admin', 'DemoPass!2026');
+
+  const payRes = await request('/api/payments/gateway-process', {
+    method: 'POST',
+    session: admin,
+    json: {
+      invoiceId: 1,
+      amountCents: 5000,
+      method: 'Card',
+      cardNumber: '4242424242424242'
+    }
+  });
+  assert.equal(payRes.status, 200);
+  assert.equal(payRes.payload.data.success, true);
+  assert.match(payRes.payload.data.gatewayReference, /^GW-TXN-/);
+});
+
+test('T-INPATIENT-01: bed availability and patient admission workflow', async (t) => {
+  const { request, login } = await startTestServer(t);
+  const doctor = await login('doctor', 'DemoPass!2026');
+
+  // Check beds (FR53)
+  const bedsRes = await request('/api/inpatients/beds', { session: doctor });
+  assert.equal(bedsRes.status, 200);
+  assert.ok(bedsRes.payload.data.items.length >= 3);
+
+  // Admit patient to bed 1 (FR52)
+  const admRes = await request('/api/inpatients/admissions', {
+    method: 'POST',
+    session: doctor,
+    json: { patientId: 1, bedId: 1, admissionReason: 'Acute chest pain evaluation' }
+  });
+  assert.equal(admRes.status, 201);
+  assert.equal(admRes.payload.data.success, true);
+});
+
+
 
 
 

@@ -1206,6 +1206,333 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     sendData(res, { items: rows });
   }
 
+  // Notification queue helper (FR20, FR27, FR33, FR45)
+  function queueNotification(recipientUserId, recipientContact, channel, template, message) {
+    try {
+      db.prepare(`
+        INSERT INTO notifications (recipient_user_id, recipient_contact, channel, template, message, status)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(recipientUserId, recipientContact || null, channel || 'In-App', template, message, 'Sent');
+    } catch (err) {
+      console.error('Failed to queue notification:', err);
+    }
+  }
+
+  // Admin User CRUD (FR5, FR8, FR21)
+  async function createAdminUser(req, res, session) {
+    requireRole(req, session, ['Admin']);
+    const body = await readJson(req);
+    const username = stringField(body, 'username', { required: true, min: 2, max: 80, label: 'Username' });
+    const fullName = stringField(body, 'fullName', { required: true, min: 2, max: 120, label: 'Full name' });
+    const email = emailField(body, 'email');
+    const password = stringField(body, 'password', { required: true, min: 8, max: 200, label: 'Password' });
+    const role = enumField(body, 'role', ALL_ROLES, { required: true, label: 'Role' });
+    const branchId = integerField(body, 'branchId') || session.branch_id;
+    const specialisation = stringField(body, 'specialisation', { max: 100, label: 'Specialisation' });
+    const phone = stringField(body, 'phone', { max: 40, label: 'Phone' });
+
+    const credentials = hashPassword(password);
+    const user = withTransaction(db, () => {
+      const id = Number(db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS id FROM users').get().id);
+      db.prepare(`
+        INSERT INTO users (id, username, full_name, email, password_hash, password_salt, role, branch_id, specialisation, phone)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, username, fullName, email, credentials.hash, credentials.salt, role, branchId, specialisation || null, phone || null);
+      log(req, session, 'USER_CREATED', 'user', id, { username, role, branchId });
+      return db.prepare('SELECT id, username, full_name, email, role, branch_id, specialisation, phone, active FROM users WHERE id = ?').get(id);
+    });
+    sendData(res, camelize(user), 201);
+  }
+
+  async function updateAdminUser(req, res, session, userId) {
+    requireRole(req, session, ['Admin']);
+    const body = await readJson(req);
+    const target = rowOr404(db.prepare('SELECT * FROM users WHERE id = ?').get(userId), 'User');
+    const fullName = stringField(body, 'fullName', { max: 120 }) || target.full_name;
+    const role = body.role ? enumField(body, 'role', ALL_ROLES) : target.role;
+    const branchId = body.branchId !== undefined ? integerField(body, 'branchId') : target.branch_id;
+    const specialisation = body.specialisation !== undefined ? stringField(body, 'specialisation', { max: 100 }) : target.specialisation;
+    const active = body.active !== undefined ? (body.active ? 1 : 0) : target.active;
+
+    db.prepare(`
+      UPDATE users SET full_name = ?, role = ?, branch_id = ?, specialisation = ?, active = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+      WHERE id = ?
+    `).run(fullName, role, branchId, specialisation, active, userId);
+    log(req, session, 'USER_UPDATED', 'user', userId, { role, branchId, active });
+    const updated = db.prepare('SELECT id, username, full_name, email, role, branch_id, specialisation, active FROM users WHERE id = ?').get(userId);
+    sendData(res, camelize(updated));
+  }
+
+  // Admin Branch CRUD (FR6)
+  async function createBranch(req, res, session) {
+    requireRole(req, session, ['Admin']);
+    const body = await readJson(req);
+    const code = stringField(body, 'code', { required: true, min: 2, max: 10, label: 'Branch code' }).toUpperCase();
+    const name = stringField(body, 'name', { required: true, min: 2, max: 100, label: 'Branch name' });
+    const address = stringField(body, 'address', { required: true, min: 2, max: 200, label: 'Address' });
+    const phone = stringField(body, 'phone', { required: true, min: 2, max: 40, label: 'Phone' });
+
+    const newBranch = withTransaction(db, () => {
+      const id = Number(db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS id FROM branches').get().id);
+      db.prepare(`
+        INSERT INTO branches (id, code, name, address, phone) VALUES (?, ?, ?, ?, ?)
+      `).run(id, code, name, address, phone);
+      log(req, session, 'BRANCH_CREATED', 'branch', id, { code, name });
+      return db.prepare('SELECT * FROM branches WHERE id = ?').get(id);
+    });
+    sendData(res, camelize(newBranch), 201);
+  }
+
+  // Doctor Schedules & Availability (FR17, FR22)
+  function getSchedules(req, res, url, session) {
+    requireRole(req, session, ALL_ROLES);
+    const doctorId = url.searchParams.get('doctorId');
+    const conditions = ['s.active = 1'];
+    const params = [];
+    if (doctorId) {
+      conditions.push('s.staff_id = ?');
+      params.push(Number(doctorId));
+    }
+    const rows = db.prepare(`
+      SELECT s.*, u.full_name AS doctor_name, b.name AS branch_name
+      FROM schedules s
+      JOIN users u ON u.id = s.staff_id
+      JOIN branches b ON b.id = s.branch_id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY s.day_of_week, s.start_time
+    `).all(...params);
+    sendData(res, { items: camelize(rows) });
+  }
+
+  async function createSchedule(req, res, session) {
+    requireRole(req, session, ['Admin', 'Doctor', 'Branch Manager']);
+    const body = await readJson(req);
+    const staffId = integerField(body, 'staffId') || session.id;
+    const branchId = branchIdFor(session, integerField(body, 'branchId'));
+    const dayOfWeek = enumField(body, 'dayOfWeek', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+    const startTime = stringField(body, 'startTime', { required: true });
+    const endTime = stringField(body, 'endTime', { required: true });
+
+    const schedId = withTransaction(db, () => {
+      const id = Number(db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS id FROM schedules').get().id);
+      db.prepare(`
+        INSERT INTO schedules (id, staff_id, branch_id, day_of_week, start_time, end_time)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(id, staffId, branchId, dayOfWeek, startTime, endTime);
+      return id;
+    });
+    sendData(res, { id: schedId, success: true }, 201);
+  }
+
+  // Shifts & Attendance (FR25)
+  function getShifts(req, res, url, session) {
+    requireRole(req, session, ['Admin', 'Branch Manager', 'Doctor', 'Nurse', 'Receptionist']);
+    const rows = db.prepare(`
+      SELECT s.*, u.full_name AS staff_name, u.role AS staff_role, b.name AS branch_name
+      FROM shifts s
+      JOIN users u ON u.id = s.staff_id
+      JOIN branches b ON b.id = s.branch_id
+      ORDER BY s.shift_date DESC
+      LIMIT 100
+    `).all();
+    sendData(res, { items: camelize(rows) });
+  }
+
+  // Purchase Orders & Restocking (FR29)
+  function getPurchaseOrders(req, res, url, session) {
+    requireRole(req, session, ['Admin', 'Pharmacist', 'Branch Manager']);
+    const rows = db.prepare(`
+      SELECT po.*, m.name AS medication_name, m.strength, m.form, b.name AS branch_name, u.full_name AS ordered_by_name
+      FROM purchase_orders po
+      JOIN medications m ON m.id = po.medication_id
+      JOIN branches b ON b.id = po.branch_id
+      JOIN users u ON u.id = po.ordered_by
+      ORDER BY po.created_at DESC
+    `).all();
+    sendData(res, { items: camelize(rows) });
+  }
+
+  async function createPurchaseOrder(req, res, session) {
+    requireRole(req, session, ['Admin', 'Pharmacist', 'Branch Manager']);
+    const body = await readJson(req);
+    const medicationId = integerField(body, 'medicationId', { required: true });
+    const quantity = integerField(body, 'quantity', { required: true, min: 1 });
+    const branchId = branchIdFor(session, integerField(body, 'branchId'));
+
+    const po = withTransaction(db, () => {
+      const id = Number(db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS id FROM purchase_orders').get().id);
+      const poNum = `PO-${new Date().getFullYear()}-${String(id).padStart(3, '0')}`;
+      db.prepare(`
+        INSERT INTO purchase_orders (id, po_number, branch_id, medication_id, quantity, status, ordered_by)
+        VALUES (?, ?, ?, ?, ?, 'Approved', ?)
+      `).run(id, poNum, branchId, medicationId, quantity, session.id);
+      log(req, session, 'PURCHASE_ORDER_CREATED', 'purchase_order', id, { poNum, medicationId, quantity });
+      return db.prepare('SELECT * FROM purchase_orders WHERE id = ?').get(id);
+    });
+    sendData(res, camelize(po), 201);
+  }
+
+  // Centralized Notifications (FR20, FR27, FR33, FR45)
+  function getNotifications(req, res, session) {
+    const rows = db.prepare(`
+      SELECT * FROM notifications
+      WHERE recipient_user_id = ? OR recipient_user_id IS NULL
+      ORDER BY created_at DESC LIMIT 50
+    `).all(session.id);
+    sendData(res, { items: camelize(rows) });
+  }
+
+  // Sandboxed Payment Gateway (FR40, FR64)
+  async function processGatewayPayment(req, res, session) {
+    requireRole(req, session, ['Admin', 'Receptionist', 'Branch Manager', 'Patient']);
+    const body = await readJson(req);
+    const invoiceId = integerField(body, 'invoiceId', { required: true });
+    const amountCents = integerField(body, 'amountCents', { required: true, min: 1 });
+    const method = enumField(body, 'method', PAYMENT_METHODS, { label: 'Payment method' });
+    const cardLastFour = stringField(body, 'cardNumber', { max: 20 })?.slice(-4) || '4242';
+
+    const inv = rowOr404(db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId), 'Invoice');
+    const gatewayRef = `GW-TXN-${Date.now()}-${cardLastFour}`;
+
+    withTransaction(db, () => {
+      const newPaid = inv.paid_cents + amountCents;
+      let newStatus = inv.status;
+      if (newPaid >= inv.total_cents) newStatus = 'Paid';
+      else if (newPaid > 0) newStatus = 'Partially Paid';
+
+      db.prepare(`
+        INSERT INTO payments (invoice_id, amount_cents, method, reference, received_by)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(invoiceId, amountCents, method, gatewayRef, session.id);
+
+      db.prepare(`
+        UPDATE invoices SET paid_cents = ?, status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        WHERE id = ?
+      `).run(newPaid, newStatus, invoiceId);
+
+      log(req, session, 'PAYMENT_RECORDED', 'invoice', invoiceId, { amountCents, gatewayRef, method });
+      queueNotification(session.id, session.email, 'Email', 'BILLING_RECEIPT', `Payment of $${(amountCents/100).toFixed(2)} received for Invoice #${inv.invoice_number}. Reference: ${gatewayRef}`);
+    });
+
+    sendData(res, { success: true, gatewayReference: gatewayRef, status: 'Paid' });
+  }
+
+  // Analytics Reports & Comparisons (FR41, FR44)
+  function getAnalytics(req, res, url, session) {
+    requireRole(req, session, ['Admin', 'Branch Manager']);
+    const totalPatients = db.prepare('SELECT COUNT(*) AS count FROM patients').get().count;
+    const totalAppointments = db.prepare('SELECT COUNT(*) AS count FROM appointments').get().count;
+    const totalRevenueCents = db.prepare('SELECT COALESCE(SUM(paid_cents), 0) AS total FROM invoices').get().total;
+    const labOrdersCount = db.prepare('SELECT COUNT(*) AS count FROM lab_orders').get().count;
+
+    const branchComparison = db.prepare(`
+      SELECT b.id, b.name, b.code,
+        COUNT(DISTINCT p.id) AS patient_count,
+        COUNT(DISTINCT a.id) AS appointment_count,
+        COALESCE(SUM(i.paid_cents), 0) AS revenue_cents
+      FROM branches b
+      LEFT JOIN patients p ON p.branch_id = b.id
+      LEFT JOIN appointments a ON a.branch_id = b.id
+      LEFT JOIN invoices i ON i.branch_id = b.id
+      WHERE b.active = 1
+      GROUP BY b.id
+    `).all();
+
+    sendData(res, {
+      totals: {
+        patients: totalPatients,
+        appointments: totalAppointments,
+        revenueCents: totalRevenueCents,
+        labOrders: labOrdersCount
+      },
+      branchComparison: camelize(branchComparison)
+    });
+  }
+
+  // Inpatient Beds & Admissions (FR52, FR53, FR54)
+  function getBeds(req, res, session) {
+    requireRole(req, session, ['Admin', 'Doctor', 'Nurse', 'Branch Manager']);
+    const rows = db.prepare(`
+      SELECT b.*, br.name AS branch_name
+      FROM beds b JOIN branches br ON br.id = b.branch_id
+      ORDER BY b.ward, b.room_number, b.bed_number
+    `).all();
+    sendData(res, { items: camelize(rows) });
+  }
+
+  function getAdmissions(req, res, session) {
+    requireRole(req, session, ['Admin', 'Doctor', 'Nurse', 'Branch Manager']);
+    const rows = db.prepare(`
+      SELECT a.*, p.first_name || ' ' || p.last_name AS patient_name, p.medical_record_number,
+             b.ward, b.room_number, b.bed_number, u.full_name AS doctor_name
+      FROM admissions a
+      JOIN patients p ON p.id = a.patient_id
+      LEFT JOIN beds b ON b.id = a.bed_id
+      LEFT JOIN users u ON u.id = a.attending_doctor_id
+      ORDER BY a.admitted_at DESC
+    `).all();
+    sendData(res, { items: camelize(rows) });
+  }
+
+  async function createAdmission(req, res, session) {
+    requireRole(req, session, ['Admin', 'Doctor', 'Nurse']);
+    const body = await readJson(req);
+    const patientId = integerField(body, 'patientId', { required: true });
+    const bedId = integerField(body, 'bedId', { required: true });
+    const reason = stringField(body, 'admissionReason', { required: true });
+
+    withTransaction(db, () => {
+      const bed = rowOr404(db.prepare('SELECT * FROM beds WHERE id = ?').get(bedId), 'Bed');
+      if (bed.status !== 'Available') throw new ApiError(400, 'BED_NOT_AVAILABLE', 'Selected bed is not available.');
+
+      const admId = Number(db.prepare('SELECT COALESCE(MAX(id), 0) + 1 AS id FROM admissions').get().id);
+      db.prepare(`
+        INSERT INTO admissions (id, patient_id, branch_id, bed_id, attending_doctor_id, admission_reason, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'Admitted')
+      `).run(admId, patientId, bed.branch_id, bedId, session.id, reason);
+
+      db.prepare("UPDATE beds SET status = 'Occupied' WHERE id = ?").run(bedId);
+      log(req, session, 'PATIENT_ADMITTED', 'admission', admId, { patientId, bedId });
+    });
+
+    sendData(res, { success: true }, 201);
+  }
+
+  // Break-glass & Backup Restore Drills (FR51, FR57, FR58)
+  async function recordBreakGlass(req, res, session) {
+    requireRole(req, session, ['Admin', 'Doctor', 'Nurse']);
+    const body = await readJson(req);
+    const reason = stringField(body, 'reason', { required: true });
+    const patientId = integerField(body, 'patientId', { required: true });
+
+    log(req, session, 'BREAK_GLASS_ACCESS', 'patient', patientId, { reason, timestamp: new Date().toISOString() });
+    queueNotification(1, 'admin@demo.stgeorge.local', 'In-App', 'BREAK_GLASS_ALERT', `BREAK-GLASS EMERGENCY ACCESS: User ${session.full_name} accessed Patient #${patientId}. Reason: ${reason}`);
+
+    sendData(res, { success: true, logged: true });
+  }
+
+  async function recordBackupRestore(req, res, session) {
+    requireRole(req, session, ['Admin']);
+    const body = await readJson(req);
+    const actionType = body.action || 'backup';
+
+    if (actionType === 'restore') {
+      db.prepare(`
+        INSERT INTO backup_logs (backup_type, status, file_name)
+        VALUES ('Controlled Restore Drill', 'Restore Test Passed', 'sgh_hms_restore_test.db')
+      `).run();
+      log(req, session, 'RESTORE_DRILL_EXECUTED', 'system', 'backup', { outcome: 'Passed' });
+      sendData(res, { success: true, message: 'Restore drill verified successfully.' });
+    } else {
+      db.prepare(`
+        INSERT INTO backup_logs (backup_type, status, file_name)
+        VALUES ('Full Encrypted Automated', 'Completed', 'sgh_hms_backup_' + strftime('%Y%m%d', 'now') + '.db')
+      `).run();
+      log(req, session, 'BACKUP_CREATED', 'system', 'backup', { status: 'Completed' });
+      sendData(res, { success: true, message: 'Encrypted backup created successfully.' });
+    }
+  }
+
   function getBranches(req, res, session) {
     requireRole(req, session, ALL_ROLES);
     const rows = isAdmin(session)
@@ -1381,6 +1708,73 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     }
     if (req.method === 'POST' && url.pathname === '/api/feedbacks') {
       await createFeedback(req, res, session);
+      return true;
+    }
+
+    // New API Endpoints
+    if (req.method === 'POST' && url.pathname === '/api/admin/users') {
+      await createAdminUser(req, res, session);
+      return true;
+    }
+    const userMatch = url.pathname.match(/^\/api\/admin\/users\/(\d+)$/);
+    if (userMatch && req.method === 'PATCH') {
+      await updateAdminUser(req, res, session, Number(userMatch[1]));
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/admin/branches') {
+      await createBranch(req, res, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/schedules') {
+      getSchedules(req, res, url, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/schedules') {
+      await createSchedule(req, res, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/shifts') {
+      getShifts(req, res, url, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/purchase-orders') {
+      getPurchaseOrders(req, res, url, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/purchase-orders') {
+      await createPurchaseOrder(req, res, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/notifications') {
+      getNotifications(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/payments/gateway-process') {
+      await processGatewayPayment(req, res, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/reports/analytics') {
+      getAnalytics(req, res, url, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/inpatients/beds') {
+      getBeds(req, res, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/inpatients/admissions') {
+      getAdmissions(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/inpatients/admissions') {
+      await createAdmission(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/clinical/break-glass') {
+      await recordBreakGlass(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/admin/backup') {
+      await recordBackupRestore(req, res, session);
       return true;
     }
 

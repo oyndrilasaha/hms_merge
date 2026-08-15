@@ -22,7 +22,18 @@ const API_ENDPOINTS = Object.freeze({
   invoices: '/api/invoices',
   invoice: (id) => `/api/invoices/${encodeURIComponent(id)}`,
   auditLogs: '/api/audit-logs',
-  feedbacks: '/api/feedbacks'
+  feedbacks: '/api/feedbacks',
+  schedules: '/api/schedules',
+  shifts: '/api/shifts',
+  purchaseOrders: '/api/purchase-orders',
+  notifications: '/api/notifications',
+  gatewayPayment: '/api/payments/gateway-process',
+  analytics: '/api/reports/analytics',
+  beds: '/api/inpatients/beds',
+  admissions: '/api/inpatients/admissions',
+  breakGlass: '/api/clinical/break-glass',
+  adminUsers: '/api/admin/users',
+  adminBranches: '/api/admin/branches'
 });
 
 const PAGE_META = Object.freeze({
@@ -46,15 +57,20 @@ const PAGE_META = Object.freeze({
     title: 'Clinical & labs',
     description: 'Record care notes and track diagnostic requests through completion.'
   },
+  inpatient: {
+    eyebrow: 'Ward Management',
+    title: 'Inpatient Beds & Admissions',
+    description: 'Monitor real-time bed availability, room movements and patient admissions.'
+  },
   pharmacy: {
     eyebrow: 'Medication management',
-    title: 'Pharmacy',
-    description: 'Review stock and record medication dispensing with an audit trail.'
+    title: 'Pharmacy & Stock Restocking',
+    description: 'Review inventory, record dispensing and issue restocking purchase orders.'
   },
   billing: {
-    eyebrow: 'Accounts',
-    title: 'Billing',
-    description: 'Create patient invoices and monitor payment status.'
+    eyebrow: 'Accounts & Gateway',
+    title: 'Billing & Sandboxed Gateway',
+    description: 'Create itemised invoices and process secure electronic payments.'
   },
   feedback: {
     eyebrow: 'Patient Relations',
@@ -66,6 +82,16 @@ const PAGE_META = Object.freeze({
     title: 'My Health Records',
     description: 'View, download and print your personal medical records, test results and treatment history.'
   },
+  'admin-manage': {
+    eyebrow: 'Administration',
+    title: 'Staff & Branch Governance',
+    description: 'Create staff accounts, configure hospital branches, assign roles and schedule shifts.'
+  },
+  reports: {
+    eyebrow: 'Performance Analytics',
+    title: 'Reports & Branch Comparison',
+    description: 'View daily, weekly, monthly statistics and side-by-side department benchmarks.'
+  },
   audit: {
     eyebrow: 'Governance',
     title: 'Audit trail',
@@ -74,11 +100,11 @@ const PAGE_META = Object.freeze({
 });
 
 const ROLE_PAGES = Object.freeze({
-  admin: ['dashboard', 'patients', 'appointments', 'clinical', 'pharmacy', 'billing', 'feedback', 'audit'],
-  branch_manager: ['dashboard', 'patients', 'appointments', 'billing', 'feedback', 'audit'],
+  admin: ['dashboard', 'patients', 'appointments', 'clinical', 'inpatient', 'pharmacy', 'billing', 'feedback', 'admin-manage', 'reports', 'audit'],
+  branch_manager: ['dashboard', 'patients', 'appointments', 'billing', 'feedback', 'reports', 'audit'],
   receptionist: ['dashboard', 'patients', 'appointments', 'billing'],
-  doctor: ['dashboard', 'patients', 'appointments', 'clinical'],
-  nurse: ['dashboard', 'patients', 'appointments', 'clinical', 'pharmacy'],
+  doctor: ['dashboard', 'patients', 'appointments', 'clinical', 'inpatient'],
+  nurse: ['dashboard', 'patients', 'appointments', 'clinical', 'inpatient', 'pharmacy'],
   lab_technician: ['dashboard', 'patients', 'clinical'],
   pharmacist: ['dashboard', 'patients', 'pharmacy'],
   patient: ['dashboard', 'my-records', 'appointments', 'billing', 'feedback']
@@ -95,7 +121,12 @@ const FORM_PERMISSIONS = Object.freeze({
   labResult: ['admin', 'lab_technician'],
   dispense: ['admin', 'pharmacist'],
   invoice: ['admin', 'receptionist'],
-  markPaid: ['admin', 'receptionist']
+  markPaid: ['admin', 'receptionist'],
+  adminUser: ['admin'],
+  adminBranch: ['admin'],
+  schedule: ['admin', 'doctor', 'branch_manager'],
+  purchaseOrder: ['admin', 'pharmacist', 'branch_manager'],
+  admission: ['admin', 'doctor', 'nurse']
 });
 
 const state = {
@@ -492,8 +523,16 @@ function renderPageActions(page) {
     if (canUseForm('nurseObservation')) actions.push(actionButton('nurseObservation', 'Record vitals / observation', false));
     if (canUseForm('labOrder')) actions.push(actionButton('labOrder', 'Create lab order'));
   }
-  if (page === 'pharmacy' && canUseForm('dispense')) actions.push(actionButton('dispense', 'Dispense medication'));
+  if (page === 'inpatient' && canUseForm('admission')) actions.push(actionButton('admission', 'Admit Patient'));
+  if (page === 'pharmacy') {
+    if (canUseForm('dispense')) actions.push(actionButton('dispense', 'Dispense medication'));
+    if (canUseForm('purchaseOrder')) actions.push(actionButton('purchaseOrder', 'Create Restock PO', false));
+  }
   if (page === 'billing' && canUseForm('invoice')) actions.push(actionButton('invoice', 'Create invoice'));
+  if (page === 'admin-manage') {
+    if (canUseForm('adminUser')) actions.push(actionButton('adminUser', 'Add Staff Account'));
+    if (canUseForm('adminBranch')) actions.push(actionButton('adminBranch', 'Add Branch', false));
+  }
   elements.pageActions.innerHTML = actions.join('');
 }
 
@@ -513,6 +552,8 @@ async function loadPage(page) {
       state.patients = collectionFrom(await apiRequest(`${API_ENDPOINTS.patients}${branchQuery}`), ['patients']);
     } else if (page === 'appointments') {
       state.appointments = collectionFrom(await apiRequest(`${API_ENDPOINTS.appointments}${branchQuery}`), ['appointments']);
+      const sched = await apiRequest(API_ENDPOINTS.schedules);
+      state.schedules = collectionFrom(sched, ['schedules', 'items']);
     } else if (page === 'clinical') {
       const [notes, labs] = await Promise.all([
         apiRequest(`${API_ENDPOINTS.clinicalNotes}${branchQuery}`),
@@ -520,8 +561,20 @@ async function loadPage(page) {
       ]);
       state.clinicalNotes = collectionFrom(notes, ['clinicalNotes', 'clinical_notes', 'notes']);
       state.labOrders = collectionFrom(labs, ['labOrders', 'lab_orders', 'orders']);
+    } else if (page === 'inpatient') {
+      const [beds, admissions] = await Promise.all([
+        apiRequest(API_ENDPOINTS.beds),
+        apiRequest(API_ENDPOINTS.admissions)
+      ]);
+      state.beds = collectionFrom(beds, ['beds', 'items']);
+      state.admissions = collectionFrom(admissions, ['admissions', 'items']);
     } else if (page === 'pharmacy') {
-      state.medications = collectionFrom(await apiRequest(`${API_ENDPOINTS.medications}${branchQuery}`), ['medications', 'inventory']);
+      const [meds, pos] = await Promise.all([
+        apiRequest(`${API_ENDPOINTS.medications}${branchQuery}`),
+        apiRequest(API_ENDPOINTS.purchaseOrders)
+      ]);
+      state.medications = collectionFrom(meds, ['medications', 'inventory']);
+      state.purchaseOrders = collectionFrom(pos, ['purchaseOrders', 'items']);
     } else if (page === 'billing') {
       state.invoices = collectionFrom(await apiRequest(`${API_ENDPOINTS.invoices}${branchQuery}`), ['invoices']);
     } else if (page === 'my-records') {
@@ -535,6 +588,20 @@ async function loadPage(page) {
         labOrders: collectionFrom(labs, ['labOrders', 'lab_orders', 'orders']),
         invoices: collectionFrom(bills, ['invoices'])
       };
+    } else if (page === 'admin-manage') {
+      const [u, b, s, sh] = await Promise.all([
+        apiRequest(API_ENDPOINTS.users),
+        apiRequest(API_ENDPOINTS.branches),
+        apiRequest(API_ENDPOINTS.schedules),
+        apiRequest(API_ENDPOINTS.shifts)
+      ]);
+      state.users = collectionFrom(u, ['users', 'items']);
+      state.branchesList = collectionFrom(b, ['branches', 'items']);
+      state.schedules = collectionFrom(s, ['schedules', 'items']);
+      state.shifts = collectionFrom(sh, ['shifts', 'items']);
+    } else if (page === 'reports') {
+      const analytics = await apiRequest(API_ENDPOINTS.analytics);
+      state.analytics = unwrapData(analytics) || {};
     } else if (page === 'feedback') {
       state.feedbacks = ['admin', 'branch_manager'].includes(state.role) 
         ? collectionFrom(await apiRequest(API_ENDPOINTS.feedbacks), ['feedbacks', 'items'])
@@ -559,13 +626,16 @@ function renderCurrentPage() {
     patients: renderPatients,
     appointments: renderAppointments,
     clinical: renderClinical,
+    inpatient: renderInpatient,
     pharmacy: renderPharmacy,
     billing: renderBilling,
     feedback: renderFeedback,
     'my-records': renderMyRecords,
+    'admin-manage': renderAdminManage,
+    reports: renderReports,
     audit: renderAudit
   };
-  elements.pageContent.innerHTML = renderers[state.activePage]();
+  elements.pageContent.innerHTML = renderers[state.activePage] ? renderers[state.activePage]() : errorState('Page not found');
 }
 
 function renderDashboard() {
@@ -756,8 +826,11 @@ function invoicesTable(invoices) {
     const status = String(pick(invoice, 'status', 'paymentStatus', 'payment_status') || 'unpaid').toLowerCase();
     
     let actions = [];
-    if (canUseForm('markPaid') && !['paid', 'void'].includes(status)) {
-      actions.push(`<button class="table-action" type="button" data-open-form="markPaid" data-record-id="${escapeAttribute(id)}" data-record-label="${escapeAttribute(String(number))}" data-balance-cents="${escapeAttribute(balanceCents)}">Mark paid</button>`);
+    if (!['paid', 'void'].includes(status)) {
+      if (canUseForm('markPaid')) {
+        actions.push(`<button class="table-action" type="button" data-open-form="markPaid" data-record-id="${escapeAttribute(id)}" data-record-label="${escapeAttribute(String(number))}" data-balance-cents="${escapeAttribute(balanceCents)}">Mark paid</button>`);
+      }
+      actions.push(`<button class="table-action" type="button" onclick="openGatewayModal(${id}, ${balanceCents}, '${escapeAttribute(String(number))}')">⚡ Gateway</button>`);
     }
     actions.push(`<button class="table-action" type="button" data-print-invoice="${id}">Print</button>`);
     const actionsCell = `<td><div class="row-actions">${actions.join(' ')}</div></td>`;
@@ -766,6 +839,71 @@ function invoicesTable(invoices) {
   }).join('');
   return `<table class="data-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Patient</th><th scope="col">Amount</th><th scope="col">Issued</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
+
+window.openGatewayModal = function(invoiceId, balanceCents, invoiceNum) {
+  const modal = document.createElement('dialog');
+  modal.className = 'record-dialog';
+  modal.innerHTML = `
+    <div class="dialog-content" style="max-width:440px;padding:24px;">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">SANDBOXED PAYMENT GATEWAY (FR40, FR64)</p>
+          <h2 style="font-size:1.2rem;">Pay Invoice #${escapeHtml(invoiceNum)}</h2>
+          <p style="font-size:0.8rem;color:var(--ink-soft);">Amount due: <strong>${formatCurrency(balanceCents / 100)}</strong></p>
+        </div>
+      </header>
+      <form id="gateway-pay-form" style="display:grid;gap:12px;margin-top:16px;">
+        <label>Payment Method
+          <select name="method" required style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;">
+            <option value="Card">Credit / Debit Card</option>
+            <option value="Medicare">Medicare / Bulk Bill</option>
+            <option value="Bank Transfer">Direct EFT Transfer</option>
+          </select>
+        </label>
+        <label>Card Number / Medicare No.
+          <input type="text" name="cardNumber" required placeholder="4242 •••• •••• 4242" value="4242424242424242" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;">
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label>Expiry<input type="text" placeholder="12/28" value="12/28" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"></label>
+          <label>CVV<input type="text" placeholder="123" value="123" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"></label>
+        </div>
+        <p style="font-size:0.75rem;color:var(--teal-700);">🔒 Payment tokenized via Secure Sandbox Gateway. Card details are never stored.</p>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;">
+          <button type="button" class="button button--secondary" onclick="this.closest('dialog').close()">Cancel</button>
+          <button type="submit" class="button button--primary">Process Payment</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.showModal();
+
+  modal.querySelector('#gateway-pay-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerText = 'Processing...';
+    try {
+      const res = await apiRequest('/api/payments/gateway-process', {
+        method: 'POST',
+        body: {
+          invoiceId,
+          amountCents: balanceCents,
+          method: e.target.method.value,
+          cardNumber: e.target.cardNumber.value
+        }
+      });
+      modal.close();
+      modal.remove();
+      showToast('Payment processed via gateway! Reference: ' + res.gatewayReference);
+      loadPage(state.activePage);
+    } catch (err) {
+      alert('Gateway Payment Error: ' + err.message);
+      btn.disabled = false;
+      btn.innerText = 'Process Payment';
+    }
+  });
+};
 
 function renderMyRecords() {
   const { notes, labOrders, invoices } = state.myRecords || { notes: [], labOrders: [], invoices: [] };
@@ -1135,6 +1273,186 @@ function renderAudit() {
     <section class="table-panel" data-testid="audit-logs-table">
       ${state.auditLogs.length ? `<div class="table-scroll">${auditTable(state.auditLogs)}</div>` : emptyState('shield', 'No audit events found', 'Security-relevant actions will appear here as the system is used.')}
     </section>`;
+}
+
+// ---- Admin User & Branch Governance Renderer (FR5, FR6, FR8, FR21) ----
+function renderAdminManage() {
+  const users = state.users || [];
+  const branches = state.branchesList || [];
+  const schedules = state.schedules || [];
+
+  const userRows = users.length ? users.map(u => {
+    return `<tr>
+      <td><strong>${escapeHtml(u.fullName)}</strong><br><small>${escapeHtml(u.email || '')}</small></td>
+      <td><span class="status-badge status-badge--active">${escapeHtml(u.role)}</span></td>
+      <td>${escapeHtml(u.branchName || 'All Branches')}</td>
+      <td>${escapeHtml(u.specialisation || 'General')}</td>
+      <td><span class="status-badge ${u.active ? 'status-badge--success' : 'status-badge--danger'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-soft);">No staff users loaded.</td></tr>`;
+
+  const branchRows = branches.length ? branches.map(b => {
+    return `<tr>
+      <td><strong>${escapeHtml(b.code)}</strong></td>
+      <td>${escapeHtml(b.name)}</td>
+      <td>${escapeHtml(b.address)}</td>
+      <td>${escapeHtml(b.phone)}</td>
+      <td><span class="status-badge status-badge--success">Active</span></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-soft);">No branches loaded.</td></tr>`;
+
+  const scheduleRows = schedules.length ? schedules.map(s => {
+    return `<tr>
+      <td><strong>${escapeHtml(s.doctorName || 'Doctor')}</strong></td>
+      <td>${escapeHtml(s.branchName || 'Branch')}</td>
+      <td><span class="status-badge status-badge--active">${escapeHtml(s.dayOfWeek)}</span></td>
+      <td>${escapeHtml(s.startTime)} – ${escapeHtml(s.endTime)}</td>
+      <td>${escapeHtml(String(s.slotDurationMins || 30))} mins</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-soft);">No clinician schedules set.</td></tr>`;
+
+  return `
+    <div class="split-grid rise" style="grid-template-columns: 1fr;">
+      <!-- Staff Accounts -->
+      <section class="panel">
+        <header class="panel-header">
+          <div><h2>Staff &amp; Clinician Roster (FR5, FR8, FR21)</h2><p>Manage system users, role-based access, and branch assignments.</p></div>
+          <button class="button button--primary button--small" type="button" data-open-form="adminUser">+ Add Staff Account</button>
+        </header>
+        <div class="table-scroll"><table class="data-table"><thead><tr><th>Staff Member</th><th>Role</th><th>Branch</th><th>Specialisation</th><th>Status</th></tr></thead><tbody>${userRows}</tbody></table></div>
+      </section>
+
+      <!-- Hospital Branches -->
+      <section class="panel" style="margin-top:20px;">
+        <header class="panel-header">
+          <div><h2>Hospital Branches (FR6)</h2><p>Configure hospital branches, locations, and departments.</p></div>
+          <button class="button button--secondary button--small" type="button" data-open-form="adminBranch">+ Add Branch</button>
+        </header>
+        <div class="table-scroll"><table class="data-table"><thead><tr><th>Code</th><th>Branch Name</th><th>Address</th><th>Phone</th><th>Status</th></tr></thead><tbody>${branchRows}</tbody></table></div>
+      </section>
+
+      <!-- Clinician Schedules -->
+      <section class="panel" style="margin-top:20px;">
+        <header class="panel-header">
+          <div><h2>Doctor Availability Schedules (FR17, FR22)</h2><p>Configured consultation hours and time slots by doctor and branch.</p></div>
+          <button class="button button--quiet button--small" type="button" data-open-form="schedule">+ Set Schedule</button>
+        </header>
+        <div class="table-scroll"><table class="data-table"><thead><tr><th>Clinician</th><th>Branch</th><th>Day</th><th>Hours</th><th>Slot Duration</th></tr></thead><tbody>${scheduleRows}</tbody></table></div>
+      </section>
+    </div>
+  `;
+}
+
+// ---- Reports & Analytics Renderer (FR41, FR42, FR44) ----
+function renderReports() {
+  const analytics = state.analytics || {};
+  const totals = analytics.totals || { patients: 0, appointments: 0, revenueCents: 0, labOrders: 0 };
+  const comparison = analytics.branchComparison || [];
+
+  const comparisonRows = comparison.length ? comparison.map(c => {
+    const rev = formatCurrency(c.revenueCents || 0);
+    return `<tr>
+      <td><strong>${escapeHtml(c.name)} (${escapeHtml(c.code)})</strong></td>
+      <td>${escapeHtml(String(c.patientCount || 0))}</td>
+      <td>${escapeHtml(String(c.appointmentCount || 0))}</td>
+      <td><strong>${rev}</strong></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-soft);">No comparison data available.</td></tr>`;
+
+  return `
+    <div class="metric-grid" style="margin-bottom:20px;">
+      <article class="metric-card"><span>Total Registered Patients</span><strong>${escapeHtml(String(totals.patients))}</strong></article>
+      <article class="metric-card"><span>Total Appointments</span><strong>${escapeHtml(String(totals.appointments))}</strong></article>
+      <article class="metric-card"><span>Total Collected Revenue</span><strong>${formatCurrency(totals.revenueCents || 0)}</strong></article>
+      <article class="metric-card"><span>Total Lab Orders</span><strong>${escapeHtml(String(totals.labOrders))}</strong></article>
+    </div>
+
+    <section class="panel rise" style="margin-bottom:20px;">
+      <header class="panel-header">
+        <div><h2>Branch &amp; Department Performance Benchmark (FR44)</h2><p>Side-by-side comparison of active branch operational metrics.</p></div>
+        <div style="display:flex;gap:8px;">
+          <button class="button button--secondary button--small" type="button" onclick="window.print()">🖨 Export PDF Report (FR42)</button>
+        </div>
+      </header>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th>Branch</th><th>Patients</th><th>Appointments</th><th>Revenue Collected</th></tr></thead>
+          <tbody>${comparisonRows}</tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Backup & Restore Operations Panel (FR57, FR58) -->
+    <section class="panel rise" style="border:1px solid #cde4e1;background:#f0fdfa;">
+      <header class="panel-header">
+        <div><h2>Backup &amp; Disaster Recovery Operations (NFR17, NFR18, FR57, FR58)</h2><p>Run automated encrypted backups and verify timed recovery drills.</p></div>
+      </header>
+      <div style="display:flex;gap:12px;padding:16px;">
+        <button class="button button--primary" type="button" onclick="runBackupOperation('backup')">🔒 Execute Encrypted Backup (NFR17)</button>
+        <button class="button button--secondary" type="button" onclick="runBackupOperation('restore')">⚡ Run 30-Min Restore Drill (NFR18)</button>
+      </div>
+      <p id="backup-status-msg" style="padding:0 16px 16px;font-size:0.85rem;color:var(--teal-700);font-weight:700;"></p>
+    </section>
+  `;
+}
+
+window.runBackupOperation = async function(type) {
+  try {
+    const res = await apiRequest('/api/admin/backup', { method: 'POST', body: { action: type } });
+    document.getElementById('backup-status-msg').innerText = '✓ ' + (res.message || 'Operation executed successfully.');
+  } catch (err) {
+    document.getElementById('backup-status-msg').innerText = '✕ Error: ' + err.message;
+  }
+};
+
+// ---- Inpatient Beds & Admissions Renderer (FR52, FR53, FR54) ----
+function renderInpatient() {
+  const beds = state.beds || [];
+  const admissions = state.admissions || [];
+
+  const bedCards = beds.length ? beds.map(b => {
+    let badgeClass = 'status-badge--success';
+    if (b.status === 'Occupied') badgeClass = 'status-badge--danger';
+    if (b.status === 'Maintenance') badgeClass = 'status-badge--warning';
+    return `<article class="metric-card" style="padding:16px;min-width:160px;">
+      <span style="font-size:0.75rem;color:var(--ink-soft);">${escapeHtml(b.ward)}</span>
+      <strong style="font-size:1.1rem;margin:4px 0;">Room ${escapeHtml(b.roomNumber)} - Bed ${escapeHtml(b.bedNumber)}</strong>
+      <span class="status-badge ${badgeClass}">${escapeHtml(b.status)}</span>
+    </article>`;
+  }).join('') : `<p style="padding:16px;color:var(--ink-soft);">No beds configured.</p>`;
+
+  const admissionRows = admissions.length ? admissions.map(a => {
+    return `<tr>
+      <td><strong>${escapeHtml(a.patientName)}</strong><br><small>${escapeHtml(a.medicalRecordNumber)}</small></td>
+      <td>${escapeHtml(a.ward || 'General')} - Bed ${escapeHtml(a.bedNumber || 'Unassigned')}</td>
+      <td>${escapeHtml(a.admissionReason)}</td>
+      <td>${escapeHtml(a.doctorName || 'Attending Doctor')}</td>
+      <td><span class="status-badge status-badge--active">${escapeHtml(a.status)}</span></td>
+      <td>${escapeHtml(formatDate(a.admittedAt))}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-soft);">No active inpatient admissions.</td></tr>`;
+
+  return `
+    <section class="panel rise" style="margin-bottom:20px;">
+      <header class="panel-header">
+        <div><h2>Real-Time Ward Bed Availability (FR53)</h2><p>Live occupancy tracking across hospital wards.</p></div>
+      </header>
+      <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;">${bedCards}</div>
+    </section>
+
+    <section class="panel rise">
+      <header class="panel-header">
+        <div><h2>Inpatient Admissions &amp; Ward Movements (FR52, FR54)</h2><p>Admitted patients, assigned beds, and responsible care teams.</p></div>
+        <button class="button button--primary button--small" type="button" data-open-form="admission">+ Admit Patient</button>
+      </header>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th>Patient</th><th>Bed Location</th><th>Admission Reason</th><th>Attending Clinician</th><th>Status</th><th>Admitted Date</th></tr></thead>
+          <tbody>${admissionRows}</tbody>
+        </table>
+      </div>
+    </section>
+  `;
 }
 
 function auditTable(logs) {
@@ -1513,6 +1831,95 @@ function handleActionClick(event) {
 
 function formDefinitions() {
   return {
+    adminUser: {
+      eyebrow: 'Administration',
+      title: 'Add Staff Account (FR5, FR21)',
+      description: 'Create a new staff user with role-based access and branch assignment.',
+      submitLabel: 'Create staff account',
+      method: 'POST',
+      endpoint: () => API_ENDPOINTS.adminUsers,
+      success: 'Staff user created successfully.',
+      fields: [
+        field('username', 'Username', 'text', { required: true }),
+        field('fullName', 'Full name', 'text', { required: true }),
+        field('email', 'Email address', 'email', { required: true }),
+        field('password', 'Initial Password', 'password', { required: true, minlength: 8 }),
+        selectField('role', 'Role', [
+          ['Admin', 'Admin'],
+          ['Doctor', 'Doctor'],
+          ['Nurse', 'Nurse'],
+          ['Receptionist', 'Receptionist'],
+          ['Lab Technician', 'Lab Technician'],
+          ['Pharmacist', 'Pharmacist'],
+          ['Branch Manager', 'Branch Manager']
+        ], { required: true }),
+        selectField('branchId', 'Branch Assignment', state.branchesList.map(b => [String(b.id), `${b.name} (${b.code})`]), { required: true }),
+        field('specialisation', 'Specialisation (Doctors/Nurses)', 'text', { placeholder: 'e.g. Cardiology, Pediatrics' }),
+        field('phone', 'Contact Phone', 'tel', { placeholder: '04xx xxx xxx' })
+      ]
+    },
+    adminBranch: {
+      eyebrow: 'Administration',
+      title: 'Add Hospital Branch (FR6)',
+      description: 'Register a new branch location in the system.',
+      submitLabel: 'Create Branch',
+      method: 'POST',
+      endpoint: () => API_ENDPOINTS.adminBranches,
+      success: 'New branch created successfully.',
+      fields: [
+        field('code', 'Branch Code (e.g. KOG)', 'text', { required: true }),
+        field('name', 'Branch Name', 'text', { required: true }),
+        field('address', 'Full Address', 'text', { wide: true, required: true }),
+        field('phone', 'Phone Number', 'tel', { required: true })
+      ]
+    },
+    schedule: {
+      eyebrow: 'Scheduling',
+      title: 'Set Doctor Schedule (FR17, FR22)',
+      description: 'Configure consultation availability and time slots.',
+      submitLabel: 'Save Schedule',
+      method: 'POST',
+      endpoint: () => API_ENDPOINTS.schedules,
+      success: 'Doctor availability schedule saved successfully.',
+      fields: [
+        selectField('staffId', 'Doctor', state.doctors.map(d => [String(d.id), d.fullName]), { required: true }),
+        selectField('branchId', 'Branch', state.branches.map(b => [String(b.id), b.name]), { required: true }),
+        selectField('dayOfWeek', 'Day of Week', [
+          ['Monday', 'Monday'], ['Tuesday', 'Tuesday'], ['Wednesday', 'Wednesday'],
+          ['Thursday', 'Thursday'], ['Friday', 'Friday'], ['Saturday', 'Saturday'], ['Sunday', 'Sunday']
+        ], { required: true }),
+        field('startTime', 'Start Time', 'time', { required: true, value: '09:00' }),
+        field('endTime', 'End Time', 'time', { required: true, value: '17:00' })
+      ]
+    },
+    purchaseOrder: {
+      eyebrow: 'Pharmacy',
+      title: 'Create Restock Purchase Order (FR29)',
+      description: 'Generate an approved purchase order for restocking low inventory.',
+      submitLabel: 'Submit Purchase Order',
+      method: 'POST',
+      endpoint: () => API_ENDPOINTS.purchaseOrders,
+      success: 'Purchase order created and approved.',
+      fields: [
+        selectField('medicationId', 'Medication Item', state.medications.map(m => [String(m.id), `${m.name} (${m.strength})`]), { required: true }),
+        field('quantity', 'Quantity Units to Reorder', 'number', { required: true, min: 1, value: '50' }),
+        selectField('branchId', 'Branch', state.branches.map(b => [String(b.id), b.name]), { required: true })
+      ]
+    },
+    admission: {
+      eyebrow: 'Inpatient Care',
+      title: 'Admit Patient to Ward Bed (FR52, FR53)',
+      description: 'Assign a patient to an available ward bed.',
+      submitLabel: 'Confirm Admission',
+      method: 'POST',
+      endpoint: () => API_ENDPOINTS.admissions,
+      success: 'Patient admitted successfully.',
+      fields: [
+        selectField('patientId', 'Patient', state.patients.map(p => [String(p.id), `${p.firstName} ${p.lastName} (${p.medicalRecordNumber})`]), { required: true }),
+        selectField('bedId', 'Available Bed', (state.beds || []).filter(b => b.status === 'Available').map(b => [String(b.id), `${b.ward} - Room ${b.roomNumber} (Bed ${b.bedNumber})`]), { required: true }),
+        field('admissionReason', 'Admission Diagnosis / Reason', 'text', { wide: true, required: true })
+      ]
+    },
     editPatient: {
       eyebrow: 'Clinical registry',
       title: 'Edit patient profile',

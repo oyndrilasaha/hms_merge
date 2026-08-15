@@ -207,6 +207,58 @@ function seedDatabase(db) {
       VALUES (?, ?, ?, ?)
     `).run(1, 'Regular checkup was average, clinic was clean.', 'Neutral', '2026-08-07T05:00:00.000Z');
 
+    // Seed Schedules (FR22)
+    const insertSchedule = db.prepare(`
+      INSERT INTO schedules (staff_id, branch_id, day_of_week, start_time, end_time, slot_duration_mins)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    insertSchedule.run(2, 1, 'Monday', '09:00', '17:00', 30);
+    insertSchedule.run(2, 1, 'Wednesday', '09:00', '17:00', 30);
+    insertSchedule.run(2, 1, 'Friday', '09:00', '13:00', 30);
+
+    // Seed Shifts & Attendance (FR25)
+    db.prepare(`
+      INSERT INTO shifts (staff_id, branch_id, shift_date, shift_type, status)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(3, 1, '2026-08-15', 'Morning', 'Scheduled');
+    db.prepare(`
+      INSERT INTO attendance (staff_id, shift_id, clock_in, status)
+      VALUES (?, ?, ?, ?)
+    `).run(3, 1, '2026-08-15T07:55:00.000Z', 'Present');
+
+    // Seed Beds & Admissions (FR52, FR53, FR54)
+    db.prepare(`INSERT INTO beds (id, branch_id, ward, room_number, bed_number, status) VALUES (1, 1, 'Ward A - General', '101', 'A1', 'Available')`).run();
+    db.prepare(`INSERT INTO beds (id, branch_id, ward, room_number, bed_number, status) VALUES (2, 1, 'Ward A - General', '101', 'A2', 'Occupied')`).run();
+    db.prepare(`INSERT INTO beds (id, branch_id, ward, room_number, bed_number, status) VALUES (3, 1, 'Ward B - ICU', '201', 'B1', 'Available')`).run();
+    
+    try {
+      db.prepare(`
+        INSERT INTO admissions (id, patient_id, branch_id, bed_id, attending_doctor_id, admission_reason, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(1, 2, 1, 2, 2, 'Hypertension observation & monitoring', 'Admitted');
+    } catch(err) {
+      console.error('ADMISSIONS SEED ERROR:', err);
+      throw err;
+    }
+
+    // Seed Purchase Orders (FR29)
+    db.prepare(`
+      INSERT INTO purchase_orders (po_number, branch_id, medication_id, quantity, status, ordered_by)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run('PO-2026-001', 1, 3, 50, 'Approved', 6);
+
+    // Seed Notifications (FR20, FR27, FR33, FR45)
+    db.prepare(`
+      INSERT INTO notifications (recipient_user_id, recipient_contact, channel, template, message, status)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(8, 'patient@demo.stgeorge.local', 'Email', 'APPOINTMENT_REMINDER', 'Reminder: Your appointment with Dr Daniel Chen is scheduled for tomorrow at 10:00 AM.', 'Sent');
+
+    // Seed Patient Consent (FR49)
+    db.prepare(`
+      INSERT INTO patient_consents (patient_id, purpose, notice_version, status)
+      VALUES (?, ?, ?, ?)
+    `).run(1, 'General Clinical Care & Telehealth Communications', '1.0', 'Granted');
+
     audit(db, {
       actorUserId: 1,
       branchId: 1,
@@ -227,10 +279,19 @@ function openDatabase({ filename = DEFAULT_DATABASE_FILE, seed = true } = {}) {
   db.exec('PRAGMA busy_timeout = 5000;');
   if (filename !== ':memory:') db.exec('PRAGMA journal_mode = WAL;');
   db.exec(fs.readFileSync(SCHEMA_FILE, 'utf8'));
-  const invoiceColumns = db.prepare('PRAGMA table_info(invoices)').all().map((column) => column.name);
-  if (!invoiceColumns.includes('due_date')) db.exec('ALTER TABLE invoices ADD COLUMN due_date TEXT;');
-  const labColumns = db.prepare('PRAGMA table_info(lab_orders)').all().map((column) => column.name);
-  if (!labColumns.includes('attachment_url')) db.exec('ALTER TABLE lab_orders ADD COLUMN attachment_url TEXT;');
+
+  // Column migrations
+  const invoiceCols = db.prepare('PRAGMA table_info(invoices)').all().map((c) => c.name);
+  if (!invoiceCols.includes('due_date')) db.exec('ALTER TABLE invoices ADD COLUMN due_date TEXT;');
+  const labCols = db.prepare('PRAGMA table_info(lab_orders)').all().map((c) => c.name);
+  if (!labCols.includes('attachment_url')) db.exec('ALTER TABLE lab_orders ADD COLUMN attachment_url TEXT;');
+  const userCols = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+  if (!userCols.includes('specialisation')) db.exec('ALTER TABLE users ADD COLUMN specialisation TEXT;');
+  if (!userCols.includes('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT;');
+  if (!userCols.includes('mfa_enabled')) db.exec('ALTER TABLE users ADD COLUMN mfa_enabled INTEGER NOT NULL DEFAULT 0;');
+  const branchCols = db.prepare('PRAGMA table_info(branches)').all().map((c) => c.name);
+  if (!branchCols.includes('departments_json')) db.exec('ALTER TABLE branches ADD COLUMN departments_json TEXT;');
+
   db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(new Date().toISOString());
   if (seed) seedDatabase(db);
   return db;
