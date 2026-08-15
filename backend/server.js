@@ -12,7 +12,7 @@ function createServer(options = {}) {
 
 if (require.main === module) {
   const host = process.env.HOST || '0.0.0.0';
-  const port = Number.parseInt(process.env.PORT || '3000', 10);
+  const port = Number.parseInt(process.env.PORT || '3005', 10);
   const server = createServer({ databaseFile: process.env.SGH_DATABASE_FILE });
 
   server.listen(port, host, () => {

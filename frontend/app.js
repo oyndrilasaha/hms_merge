@@ -127,7 +127,7 @@ function cacheElements() {
     'public-portal', 'portal-toggle', 'hero-portal-btn', 'back-to-home', 'public-search', 'search-quick-tags',
     'login-view', 'login-form', 'login-username', 'login-password', 'login-status',
     'toggle-password', 'app-shell', 'menu-toggle', 'sidebar', 'sidebar-scrim',
-    'primary-nav', 'network-status', 'install-button', 'branch-select', 'profile-button',
+    'primary-nav', 'bottom-nav', 'network-status', 'install-button', 'branch-select', 'profile-button',
     'profile-menu', 'logout-button', 'user-avatar', 'user-name', 'user-role',
     'main-content', 'page-eyebrow', 'page-title', 'page-description', 'page-actions',
     'page-loading', 'page-content', 'record-dialog', 'record-form', 'dialog-eyebrow',
@@ -155,6 +155,7 @@ function bindGlobalEvents() {
   elements.menuToggle.addEventListener('click', toggleSidebar);
   elements.sidebarScrim.addEventListener('click', closeSidebar);
   elements.primaryNav.addEventListener('click', handleNavigation);
+  elements.bottomNav?.addEventListener('click', handleNavigation);
   elements.pageActions.addEventListener('click', handleActionClick);
   elements.pageContent.addEventListener('click', handleActionClick);
   elements.pageContent.addEventListener('input', handleTableFilter);
@@ -340,6 +341,56 @@ function updateUserInterface() {
   }
   const adminLabel = elements.primaryNav.querySelector('.nav-label--admin');
   if (adminLabel) adminLabel.hidden = !allowedPages.includes('audit');
+
+  // Apply visual Phone Frame mockup container wrapper for mobile roles
+  const isMobileRole = !['admin', 'branch_manager'].includes(state.role);
+  if (isMobileRole) {
+    elements.appShell.classList.add('app-shell--phone-frame');
+    if (elements.bottomNav) elements.bottomNav.hidden = false;
+    if (elements.sidebar) elements.sidebar.hidden = true;
+    renderBottomNav();
+  } else {
+    elements.appShell.classList.remove('app-shell--phone-frame');
+    if (elements.bottomNav) elements.bottomNav.hidden = true;
+    if (elements.sidebar) elements.sidebar.hidden = false;
+  }
+}
+
+function renderBottomNav() {
+  const allowedPages = getAllowedPages();
+  const bottomNav = elements.bottomNav;
+  if (!bottomNav) return;
+
+  const pageIcons = {
+    dashboard: '#icon-grid',
+    patients: '#icon-users',
+    appointments: '#icon-calendar',
+    clinical: '#icon-clinical',
+    pharmacy: '#icon-pill',
+    billing: '#icon-receipt'
+  };
+
+  const pageLabels = {
+    dashboard: 'Dashboard',
+    patients: 'Patients',
+    appointments: 'Appts',
+    clinical: 'Clinical',
+    pharmacy: 'Pharmacy',
+    billing: 'Billing'
+  };
+
+  const html = allowedPages.map(page => {
+    if (!pageIcons[page]) return '';
+    const icon = pageIcons[page];
+    const label = pageLabels[page];
+    const activeClass = state.activePage === page ? 'bottom-nav-item--active' : '';
+    return `<button class="bottom-nav-item ${activeClass}" type="button" data-page="${page}">
+      <svg aria-hidden="true"><use href="${icon}"></use></svg>
+      <span>${escapeHtml(label)}</span>
+    </button>`;
+  }).join('');
+
+  bottomNav.innerHTML = html;
 }
 
 async function loadReferenceData() {
@@ -406,6 +457,12 @@ async function navigateTo(page, { updateHash = true, focus = true } = {}) {
   for (const item of elements.primaryNav.querySelectorAll('[data-page]')) {
     if (item.dataset.page === page) item.setAttribute('aria-current', 'page');
     else item.removeAttribute('aria-current');
+  }
+  if (elements.bottomNav) {
+    for (const item of elements.bottomNav.querySelectorAll('[data-page]')) {
+      if (item.dataset.page === page) item.classList.add('bottom-nav-item--active');
+      else item.classList.remove('bottom-nav-item--active');
+    }
   }
   renderPageActions(page);
   if (focus) elements.mainContent.focus({ preventScroll: true });

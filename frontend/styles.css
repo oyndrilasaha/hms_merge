@@ -2674,5 +2674,171 @@ textarea[aria-invalid="true"] {
 }
 
 
+/* ==============================================================
+   📱 PHONE FRAME MOCKUP & BOTTOM TAB BAR STYLES
+   ============================================================== */
 
+/* Bottom Navigation Tab Bar */
+.bottom-nav {
+  display: none;
+}
 
+.bottom-nav-item {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 0;
+  flex: 1;
+  transition: color 0.15s ease;
+}
+
+.bottom-nav-item svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.bottom-nav-item--active {
+  color: var(--teal-700) !important;
+  font-weight: 700;
+}
+
+/* Responsive Overrides for Mobile viewports */
+@media (max-width: 768px) {
+  .app-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    grid-template-areas: "topbar" "main" !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr !important;
+  }
+
+  .sidebar {
+    display: none !important;
+  }
+
+  .main-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px 16px 80px !important; /* space for bottom nav */
+    max-width: 100% !important;
+  }
+
+  .bottom-nav {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 60px !important;
+    background: var(--surface) !important;
+    border-top: 1px solid var(--line) !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.04) !important;
+  }
+}
+
+/* Simulated Phone Frame on Desktop */
+@media (min-width: 769px) {
+  .app-shell--phone-frame {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 390px !important;
+    height: 780px !important;
+    border-radius: 44px !important;
+    border: 12px solid #0b2422 !important; /* var(--ink-deep) */
+    box-shadow: 0 30px 60px -20px rgba(11,36,34,.35) !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    background: #f5f6f2 !important; /* var(--mist) */
+    overflow: hidden !important;
+    z-index: 1000 !important;
+    grid-template-areas: "topbar" "main" !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr !important;
+  }
+
+  /* Notch element */
+  .app-shell--phone-frame::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 120px !important;
+    height: 18px !important;
+    background: #0b2422 !important; /* var(--ink-deep) */
+    border-bottom-left-radius: 12px !important;
+    border-bottom-right-radius: 12px !important;
+    z-index: 2000 !important;
+  }
+
+  /* Padding adjustments inside Phone Frame */
+  .app-shell--phone-frame .topbar {
+    padding-top: 18px !important;
+    height: 74px !important;
+    border-radius: 34px 34px 0 0 !important;
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--line) !important;
+  }
+
+  /* Hide regular sidebar inside phone mockup */
+  .app-shell--phone-frame .sidebar {
+    display: none !important;
+  }
+
+  /* Embedded Bottom Tab Bar in desktop phone shell */
+  .app-shell--phone-frame .bottom-nav {
+    display: flex !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 62px !important;
+    background: var(--surface) !important;
+    border-top: 1px solid var(--line) !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    border-radius: 0 0 34px 34px !important;
+    z-index: 1000 !important;
+    padding-bottom: 6px !important; /* spacing at bottom */
+  }
+
+  .app-shell--phone-frame .main-content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px 16px 72px !important; /* padding for bottom nav */
+    max-height: 708px !important;
+  }
+
+  /* Hide text in header inside phone mockup to save space */
+  .app-shell--phone-frame .brand-lockup span {
+    display: none !important;
+  }
+  .app-shell--phone-frame .brand-lockup--topbar {
+    width: auto !important;
+  }
+  .app-shell--phone-frame .topbar-actions {
+    gap: 4px !important;
+  }
+  .app-shell--phone-frame .profile-copy {
+    display: none !important;
+  }
+  .app-shell--phone-frame .branch-picker {
+    display: none !important;
+  }
+}

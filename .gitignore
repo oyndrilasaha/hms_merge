@@ -8,3 +8,5 @@ data/*.db-shm
 data/*.db-wal
 evidence/runtime/
 ui-ux-pro-max-skill/
+scratch/
+
