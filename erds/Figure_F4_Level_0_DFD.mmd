@@ -1,0 +1,38 @@
+graph TD
+    %% System Process
+    System[("0.0 St George Hospital Management System")]
+
+    %% External Entities
+    Patient["Patient"]
+    Receptionist["Receptionist"]
+    Doctor["Doctor"]
+    Nurse["Nurse"]
+    Tech["Lab Technician"]
+    Pharm["Pharmacist"]
+    Admin["System Administrator"]
+    Manager["Branch Manager"]
+    Gateway["Payment Gateway"]
+
+    %% Data Flows
+    Receptionist -->|Register Patient / Book Appointment| System
+    System -->|Confirmations & Schedule Details| Patient
+    
+    Doctor -->|Clinical Notes / Lab Test Orders| System
+    System -->|Lab Orders & Request Queue| Tech
+    Tech -->|Lab Test Results| System
+    
+    Nurse -->|Ward Observations| System
+    
+    Pharm -->|Dispense Medication / Stock Update| System
+    System -->|Stock Alerts & Reorders| Pharm
+    
+    System -->|Invoice Details| Patient
+    Patient -->|Payment Processing| System
+    System -->|Transaction Request| Gateway
+    Gateway -->|Transaction Auth/Capture| System
+
+    Admin -->|Manage User Profiles & Branch Reference Data| System
+    System -->|Security Audits & Reports| Admin
+
+    Manager -->|Request Branch Operations Report| System
+    System -->|Operational Performance Metrics| Manager

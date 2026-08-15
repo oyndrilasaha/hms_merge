@@ -1,0 +1,755 @@
+1. Figure 1. Proposed Layered Architecture
+text
+
+
+graph TD
+    %% Styling
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef network fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef controller fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef data fill:#ffebee,stroke:#c62828,stroke-width:2px;
+    classDef crosscut fill:#eceff1,stroke:#37474f,stroke-width:2px,stroke-dasharray: 5 5;
+
+    %% Client Layer
+    subgraph ClientLayer ["1. Presentation Layer (Installable PWA Client)"]
+        PWA["Installable PWA App Shell"]
+        PatientUI["Patient Interface"]
+        StaffUI["Hospital/Clinic Interface"]
+        AdminUI["Administration Interface"]
+        PWA --> PatientUI
+        PWA --> StaffUI
+        PWA --> AdminUI
+    end
+    class ClientLayer,PWA,PatientUI,StaffUI,AdminUI client;
+
+    %% Network Transport
+    subgraph NetLayer ["2. Transport Security Layer"]
+        HTTPS["Secure Transport (HTTPS / TLS 1.3)"]
+    end
+    class NetLayer,HTTPS network;
+
+    %% Controller & Service Layers
+    subgraph AppLayer ["3. Application & Service Layer (PHP/MVC Laravel)"]
+        subgraph Controllers ["Controllers (Request Gateways)"]
+            Router["Routing & Request Validation"]
+            RBAC["RBAC / Permission Middleware"]
+            Router --> RBAC
+        end
+
+        subgraph CoreServices ["Modular Domain Services"]
+            AuthSvc["Auth & Session Service"]
+            PatSvc["Patient Registry Service"]
+            AptSvc["Appointment Scheduler"]
+            ClinSvc["Clinical Notes Service"]
+            LabSvc["Laboratory Orchestrator"]
+            PharmSvc["Pharmacy & Inventory"]
+            BillSvc["Billing & Invoice Engine"]
+        end
+
+        subgraph Adapters ["Integration Adapters"]
+            SMSAdapter["SMS & Email Queue Adapter"]
+            PayAdapter["Payment Gateway Adapter"]
+            AIAdapter["Advisory AI Adapter"]
+        end
+    end
+    class AppLayer,Controllers,Router,RBAC controller;
+    class CoreServices,AuthSvc,PatSvc,AptSvc,ClinSvc,LabSvc,PharmSvc,BillSvc service;
+    class Adapters,SMSAdapter,PayAdapter,AIAdapter controller;
+
+    %% Data Layer
+    subgraph DataLayer ["4. Persistence & Storage Layer"]
+        MySQL[("MySQL Transactional Database<br>(Tables, FKs, Indexes)")]
+        PrivateStorage[("Private File Storage<br>(Outside Web Root)")]
+    end
+    class DataLayer,MySQL,PrivateStorage data;
+
+    %% Cross-Cutting Controls
+    subgraph CrossCut ["Cross-Cutting Services (System-Wide Security & Compliance)"]
+        AuditLog["Security Audit Logger<br>(Append-Only Trail)"]
+        Encrypt["Encryption Engine<br>(Scrypt/Salt Hashing, AES-256)"]
+        BackupSvc["Backup & Disaster Recovery Manager<br>(Encrypted Snapshots)"]
+        MonSvc["Monitoring, Intrusion Detection & Queue Alerting"]
+    end
+    class CrossCut,AuditLog,Encrypt,BackupSvc,MonSvc crosscut;
+
+    %% Flow Connections
+    ClientLayer -->|Encrypted Requests| HTTPS
+    HTTPS -->|Authorized Endpoints| Router
+    RBAC -->|Delegate Work| CoreServices
+    CoreServices -->|Third-Party Calls| Adapters
+    CoreServices -->|Read/Write Records| MySQL
+    LabSvc -->|Save Reports| PrivateStorage
+
+    %% Cross-cutting connections (Dashed lines to represent universal coverage)
+    AuditLog -.-> AppLayer
+    Encrypt -.-> DataLayer
+    Encrypt -.-> AppLayer
+    BackupSvc -.-> DataLayer
+    MonSvc -.-> AppLayer
+
+2. Figure F1. Use-Case Diagram (All-Role Model)
+text
+
+
+graph LR
+    %% Primary Actors (Initiators)
+    subgraph Primary ["Primary Actors (Left)"]
+        Patient((Patient))
+        Receptionist((Receptionist))
+        Doctor((Doctor))
+        Nurse((Nurse))
+        Tech((Lab Tech))
+        Pharm((Pharmacist))
+        Manager((Branch Manager))
+        Admin((Admin))
+    end
+
+    %% Use Cases (Center Processes)
+    subgraph UseCases ["St George HMS Use Cases (Center)"]
+        UC1([UC01: Register & Authenticate])
+        UC2([UC02: Manage Users & Branches])
+        UC3([UC03: Register Patient])
+        UC4([UC04: Manage Appointment])
+        UC5([UC05: Record Clinical Notes])
+        UC5b([UC05b: Record Observations])
+        UC6([UC06: Process Lab Test])
+        UC7([UC07: Dispense Medicine])
+        UC8([UC08: Invoice & Payment])
+        UC9([UC09: Generate Reports])
+    end
+
+    %% Secondary Actors / External Systems (Receivers)
+    subgraph Secondary ["Secondary Actors (Right)"]
+        Gateway{{"Payment Gateway"}}
+        SMS{{"SMS / Email Gateway"}}
+        SecDoc((Doctor))
+        SecPatient((Patient))
+    end
+
+    %% Primary Actors initiating Use Cases
+    Patient --> UC1
+    Patient --> UC4
+    Patient --> UC8
+    
+    Receptionist --> UC3
+    Receptionist --> UC4
+    Receptionist --> UC8
+    
+    Doctor --> UC5
+    Doctor --> UC6
+    
+    Nurse --> UC5b
+    
+    Tech --> UC6
+    
+    Pharm --> UC7
+    
+    Manager --> UC9
+    
+    Admin --> UC2
+    Admin --> UC1
+
+    %% Use Cases linking to Secondary Actors (dashed arrows)
+    UC1 -.-> SMS
+    UC3 -.-> SecPatient
+    UC4 -.-> SecDoc
+    UC4 -.-> SMS
+    UC6 -.-> SecDoc
+    UC6 -.-> SMS
+    UC7 -.-> SecPatient
+    UC8 -.-> Gateway
+    UC8 -.-> SMS
+
+3. Figure F2. Core Entity-Relationship Diagram (ERD)
+text
+
+
+erDiagram
+    BRANCH {
+        int branch_id PK
+        string name
+        string state
+        string address
+        string contact
+        string status
+    }
+    ROLE {
+        int role_id PK
+        string name
+        string description
+    }
+    USER {
+        int user_id PK
+        int branch_id FK
+        string email
+        string username
+        string password_hash
+        string status
+        datetime last_login
+    }
+    USER_ROLE {
+        int user_id FK
+        int role_id FK
+        datetime effective_from
+        datetime effective_to
+    }
+    PATIENT {
+        int patient_id PK
+        int user_id FK
+        string global_number
+        string demographics
+        string contact
+    }
+    STAFF {
+        int staff_id PK
+        int user_id FK
+        int branch_id FK
+        string profession
+        string registration_no
+        string status
+    }
+    SCHEDULE {
+        int schedule_id PK
+        int staff_id FK
+        int branch_id FK
+        datetime start_time
+        datetime end_time
+        string type
+    }
+    APPOINTMENT {
+        int appointment_id PK
+        int patient_id FK
+        int doctor_staff_id FK
+        int branch_id FK
+        datetime start_time
+        datetime end_time
+        string status
+        string reason
+    }
+    MEDICAL_RECORD {
+        int record_id PK
+        int patient_id FK
+        int author_staff_id FK
+        string record_type
+        string content_ciphertext
+        datetime created_at
+        int version
+    }
+    ADMISSION {
+        int admission_id PK
+        int patient_id FK
+        int branch_id FK
+        int bed_id FK
+        datetime admitted_at
+        datetime discharged_at
+        string status
+    }
+    BED {
+        int bed_id PK
+        int branch_id FK
+        string ward
+        string room
+        string number
+        string status
+    }
+    LAB_ORDER {
+        int order_id PK
+        int patient_id FK
+        int requester_id FK
+        string test_type
+        string status
+        datetime requested_at
+    }
+    LAB_RESULT {
+        int result_id PK
+        int order_id FK
+        int technician_id FK
+        string result_ciphertext
+        string file_uri
+        datetime verified_at
+    }
+    MEDICINE {
+        int medicine_id PK
+        string name
+        string batch
+        date expiry
+        int threshold
+        int supplier_id
+    }
+    INVENTORY_TRANSACTION {
+        int transaction_id PK
+        int branch_id FK
+        int medicine_id FK
+        int qty
+        string type
+        int actor_id FK
+        datetime timestamp
+    }
+    PRESCRIPTION {
+        int prescription_id PK
+        int patient_id FK
+        int prescriber_id FK
+        datetime issued_at
+        string status
+    }
+    INVOICE {
+        int invoice_id PK
+        int patient_id FK
+        string visit_ref
+        decimal total
+        string status
+        datetime issued_at
+    }
+    PAYMENT {
+        int payment_id PK
+        int invoice_id FK
+        string gateway_reference
+        decimal amount
+        string status
+        datetime received_at
+    }
+    CONSENT {
+        int consent_id PK
+        int patient_id FK
+        string purpose
+        string notice_version
+        string state
+        datetime changed_at
+    }
+    NOTIFICATION {
+        int notification_id PK
+        string recipient
+        string channel
+        string template
+        string related_ref
+        string status
+        datetime sent_at
+    }
+    AUDIT_LOG {
+        int audit_id PK
+        string actor
+        string role
+        string action
+        string object_type_id
+        string outcome
+        datetime timestamp
+        string source
+    }
+    BACKUP_JOB {
+        int job_id PK
+        string type
+        datetime started_at
+        datetime ended_at
+        string status
+        string location_ref
+        string verification
+    }
+    FEEDBACK {
+        int feedback_id PK
+        int patient_id FK
+        string comment
+        string sentiment
+        int reviewed_by FK
+        datetime created_at
+    }
+
+    BRANCH ||--o{ USER : "hosts"
+    BRANCH ||--o{ STAFF : "employs"
+    BRANCH ||--o{ BED : "manages"
+    BRANCH ||--o{ APPOINTMENT : "schedules"
+    USER ||--o{ USER_ROLE : "assigned"
+    ROLE ||--o{ USER_ROLE : "defines"
+    USER ||--o| PATIENT : "links"
+    USER ||--o| STAFF : "identifies"
+    PATIENT ||--o{ APPOINTMENT : "books"
+    PATIENT ||--o{ MEDICAL_RECORD : "has"
+    PATIENT ||--o{ ADMISSION : "admitted"
+    PATIENT ||--o{ LAB_ORDER : "receives"
+    PATIENT ||--o{ PRESCRIPTION : "gets"
+    PATIENT ||--o{ INVOICE : "billed"
+    PATIENT ||--o{ CONSENT : "provides"
+    PATIENT ||--o{ FEEDBACK : "submits"
+    STAFF ||--o{ SCHEDULE : "allocated"
+    STAFF ||--o{ APPOINTMENT : "treats"
+    STAFF ||--o{ MEDICAL_RECORD : "records"
+    STAFF ||--o{ LAB_ORDER : "requests"
+    STAFF ||--o{ LAB_RESULT : "completes"
+    BED ||--o{ ADMISSION : "allocates"
+    LAB_ORDER ||--o{ LAB_RESULT : "results"
+    MEDICINE ||--o{ INVENTORY_TRANSACTION : "tracked"
+    INVOICE ||--o{ PAYMENT : "pays"
+
+4. Figure F3. Class Diagram for the Core Object Model
+text
+
+
+classDiagram
+    class User {
+        +int user_id
+        +int branch_id
+        +string email
+        +string username
+        +string password_hash
+        +string status
+        +datetime last_login
+        +login() bool
+        +logout() bool
+        +verifySession() bool
+    }
+
+    class Patient {
+        +int patient_id
+        +int user_id
+        +string global_number
+        +string demographics
+        +string contact
+        +register() Patient
+        +getHistory() List
+        +updateContact() bool
+    }
+
+    class Staff {
+        +int staff_id
+        +int user_id
+        +int branch_id
+        +string profession
+        +string registration_no
+        +string status
+        +getSchedule() List
+        +updateStatus() bool
+    }
+
+    class Doctor {
+        +addNote(patient_id, content) bool
+        +orderLab(patient_id, test_type) LabOrder
+        +viewPatientNotes(patient_id) List
+    }
+
+    class Nurse {
+        +addObservation(patient_id, vitals) bool
+    }
+
+    class LabTechnician {
+        +enterResults(order_id, result_data) bool
+        +verifyTest(order_id) bool
+    }
+
+    class Pharmacist {
+        +dispenseStock(patient_id, medicine_id, qty) bool
+        +checkInventory() List
+    }
+
+    class Appointment {
+        +int appointment_id
+        +int patient_id
+        +int doctor_staff_id
+        +int branch_id
+        +datetime start_time
+        +datetime end_time
+        +string status
+        +string reason
+        +create() bool
+        +checkConflict() bool
+        +cancel() bool
+    }
+
+    class MedicalRecord {
+        +int record_id
+        +int patient_id
+        +int author_staff_id
+        +string record_type
+        +string content_ciphertext
+        +datetime created_at
+        +int version
+        +encryptContent() string
+        +decryptContent() string
+        +appendVersion() bool
+    }
+
+    class Invoice {
+        +int invoice_id
+        +int patient_id
+        +string visit_ref
+        +decimal total
+        +string status
+        +datetime issued_at
+        +calculateTotal() decimal
+        +issueInvoice() bool
+        +updatePaymentStatus() bool
+    }
+
+    class AuditLog {
+        +int audit_id
+        +string actor
+        +string role
+        +string action
+        +string object_type_id
+        +string outcome
+        +datetime timestamp
+        +string source
+        +writeEntry() bool
+        +readLogs() List
+    }
+
+    Staff <|-- Doctor : Inherits
+    Staff <|-- Nurse : Inherits
+    Staff <|-- LabTechnician : Inherits
+    Staff <|-- Pharmacist : Inherits
+
+    User "1" *-- "1" Staff : associates
+    User "1" *-- "0..1" Patient : associates
+    Patient "1" --> "0..*" Appointment : schedules
+    Doctor "1" --> "0..*" Appointment : conducts
+    Patient "1" --> "0..*" MedicalRecord : owns
+    Doctor "1" --> "0..*" MedicalRecord : writes
+    Patient "1" --> "0..*" Invoice : receives
+    AuditLog "1" --> "*" User : tracks
+
+5. Figure F4. Level 0 Data-Flow Diagram (Context Diagram)
+text
+
+
+graph TD
+    %% System Process
+    System[("0.0 St George Hospital Management System")]
+
+    %% External Entities
+    Patient["Patient"]
+    Receptionist["Receptionist"]
+    Doctor["Doctor"]
+    Nurse["Nurse"]
+    Tech["Lab Technician"]
+    Pharm["Pharmacist"]
+    Admin["System Administrator"]
+    Manager["Branch Manager"]
+    Gateway["Payment Gateway"]
+
+    %% Data Flows
+    Receptionist -->|Register Patient / Book Appointment| System
+    System -->|Confirmations & Schedule Details| Patient
+    
+    Doctor -->|Clinical Notes / Lab Test Orders| System
+    System -->|Lab Orders & Request Queue| Tech
+    Tech -->|Lab Test Results| System
+    
+    Nurse -->|Ward Observations| System
+    
+    Pharm -->|Dispense Medication / Stock Update| System
+    System -->|Stock Alerts & Reorders| Pharm
+    
+    System -->|Invoice Details| Patient
+    Patient -->|Payment Processing| System
+    System -->|Transaction Request| Gateway
+    Gateway -->|Transaction Auth/Capture| System
+
+    Admin -->|Manage User Profiles & Branch Reference Data| System
+    System -->|Security Audits & Reports| Admin
+
+    Manager -->|Request Branch Operations Report| System
+    System -->|Operational Performance Metrics| Manager
+
+6. Figure F5. Level 1 Data-Flow Diagram
+text
+
+
+graph TD
+    %% External Entities
+    subgraph External_Entities ["External Roles"]
+        Rec["Receptionist"]
+        Doc["Doctor"]
+        Tech["Lab Technician"]
+        Pharm["Pharmacist"]
+        Admin["Administrator"]
+    end
+
+    %% Processes
+    subgraph Processes ["Node.js API Services"]
+        P1["1.0 Auth & Session Management"]
+        P2["2.0 Patient Management"]
+        P3["3.0 Appointment Scheduling"]
+        P4["4.0 Clinical Records"]
+        P5["5.0 Laboratory Workflow"]
+        P6["6.0 Inventory & Dispensing"]
+        P7["7.0 Billing & Invoicing"]
+        P8["8.0 Audit Logger"]
+    end
+
+    %% Data Stores
+    subgraph DB ["SQLite Database Stores"]
+        D1[("Users / Sessions")]
+        D2[("Patient Profiles")]
+        D3[("Appointments")]
+        D4[("Clinical Notes")]
+        D5[("Lab Orders")]
+        D6[("Inventory")]
+        D7[("Invoices")]
+        D8[("Audit Logs")]
+    end
+
+    %% Flows
+    Rec -->|Login Request| P1
+    P1 -->|Query Credentials| D1
+    P1 -->|Create Session| D1
+    P1 -->|Write Audit| P8
+
+    Rec -->|Register Patient Details| P2
+    P2 -->|Save Profile| D2
+    P2 -->|Trigger Audit| P8
+
+    Rec -->|Book Appointment Request| P3
+    P3 -->|Check Conflict & Doctor Avail| D3
+    P3 -->|Save Appointment| D3
+    P3 -->|Trigger Audit| P8
+
+    Doc -->|Append Clinical Notes| P4
+    P4 -->|Save Clinical Record| D4
+    P4 -->|Trigger Audit| P8
+
+    Doc -->|Order Laboratory Test| P5
+    Tech -->|Update Results & Status| P5
+    P5 -->|Create/Update Order| D5
+    P5 -->|Trigger Audit| P8
+
+    Pharm -->|Dispense Request| P6
+    P6 -->|Check Stock & Decrement| D6
+    P6 -->|Record Dispensing| D6
+    P6 -->|Trigger Audit| P8
+
+    Rec -->|Generate Invoice / Mark Paid| P7
+    P7 -->|Read Lab/Med Details| D5
+    P7 -->|Write Invoice Data| D7
+    P7 -->|Trigger Audit| P8
+
+    Admin -->|View Log File| P8
+    P8 -->|Query Audit File| D8
+    P8 -->|Write Event| D8
+
+7. Figure F6. End-to-End System Sequence Diagram
+text
+
+
+sequenceDiagram
+    autonumber
+    actor Rec as Receptionist
+    actor Doc as Doctor
+    actor Tech as Lab Tech
+    actor Pharm as Pharmacist
+    participant Sys as Node.js HTTP Server
+    database DB as SQLite Database
+
+    %% Stage 1: Auth
+    Note over Rec, Sys: 1. Authentication Stage
+    Rec->>Sys: POST /api/auth/login (username, password)
+    Sys->>DB: Query user credentials & verify hash
+    DB-->>Sys: Return user record (Role: Receptionist)
+    Sys-->>Rec: 200 OK (Set-Cookie: sgh_session, CSRF token)
+
+    %% Stage 2: Patient Registration
+    Note over Rec, Sys: 2. Patient Registration Stage
+    Rec->>Sys: POST /api/patients (demographics, contact) [With Session & CSRF]
+    Sys->>Sys: Validate fields (names, phone, email format)
+    Sys->>DB: INSERT INTO patients (global_number, demographics)
+    DB-->>Sys: Confirm insert (patient_id: 3, MRN: SGH-000003)
+    Sys->>DB: INSERT INTO audit_logs (PATIENT_CREATED)
+    Sys-->>Rec: 201 Created (MRN: SGH-000003)
+
+    %% Stage 3: Appointment Booking (Success & Conflict Check)
+    Note over Rec, Sys: 3. Appointment Booking & Conflict Prevention
+    Rec->>Sys: POST /api/appointments (patient_id: 3, doctor_id: 2, start: 14:00, end: 14:30)
+    Sys->>DB: Query appointments for Doctor 2 between 14:00 and 14:30
+    DB-->>Sys: Return 0 matching rows (No overlap)
+    Sys->>DB: INSERT INTO appointments
+    DB-->>Sys: Confirm insert (appointment_id: 45)
+    Sys-->>Rec: 201 Created (Appointment scheduled)
+
+    Rec->>Sys: POST /api/appointments (patient_id: 4, doctor_id: 2, start: 14:15, end: 14:45)
+    Sys->>DB: Query appointments for Doctor 2 between 14:15 and 14:45
+    DB-->>Sys: Return 1 matching row (appointment_id: 45 overlaps!)
+    Sys-->>Rec: 409 Conflict (Doctor is busy)
+
+    %% Stage 4: Clinical Consultation
+    Note over Doc, Sys: 4. Clinical Note & Lab Order Stage
+    Doc->>Sys: POST /api/clinical-notes (patient_id: 3, note: "Patient exhibits symptoms...")
+    Sys->>DB: INSERT INTO medical_records
+    DB-->>Sys: Confirm insert
+    Sys-->>Doc: 201 Created (Note appended)
+
+    Doc->>Sys: POST /api/lab-orders (patient_id: 3, test_type: "Blood Panel")
+    Sys->>DB: INSERT INTO lab_orders (status: PENDING)
+    DB-->>Sys: Confirm insert (order_id: 12)
+    Sys-->>Doc: 201 Created (Lab order placed)
+
+    %% Stage 5: Lab Execution
+    Note over Tech, Sys: 5. Lab Results Entry Stage
+    Tech->>Sys: PATCH /api/lab-orders/12 (result: "Normal", status: COMPLETED)
+    Sys->>DB: UPDATE lab_orders SET status = COMPLETED, INSERT INTO lab_results
+    DB-->>Sys: Confirm updates
+    Sys-->>Tech: 200 OK (Results recorded)
+
+    %% Stage 6: Pharmacy Dispensing
+    Note over Pharm, Sys: 6. Medication Dispense Stage
+    Pharm->>Sys: POST /api/medications/dispense (patient_id: 3, medicine_id: 5, qty: 2)
+    Sys->>DB: Query inventory balance for Medicine 5 (Batch A)
+    DB-->>Sys: Return stock: 10, expiry: 2028-12-31
+    Sys->>DB: UPDATE inventory (stock - 2) & INSERT INTO inventory_transactions
+    DB-->>Sys: Confirm update
+    Sys-->>Pharm: 200 OK (Dispensing recorded, stock updated)
+
+    %% Stage 7: Invoicing
+    Note over Rec, Sys: 7. Billing Stage
+    Rec->>Sys: PATCH /api/invoices/99 (status: PAID)
+    Sys->>DB: UPDATE invoices SET status = PAID, INSERT INTO payments
+    DB-->>Sys: Confirm update
+    Sys-->>Rec: 200 OK (Payment confirmed)
+
+8. Figure F7. Proposed UI Storyboard
+text
+
+
+stateDiagram-v2
+    [*] --> LoginScreen : Open Application
+    LoginScreen --> RoleDashboard : Authenticate (Success)
+    LoginScreen --> LoginScreen : Invalid Credentials (Error Alert)
+
+    state RoleDashboard {
+        [*] --> AdministratorDashboard : Role = Admin
+        [*] --> ReceptionistDashboard : Role = Receptionist
+        [*] --> DoctorDashboard : Role = Doctor
+        [*] --> LabTechDashboard : Role = LabTech
+        [*] --> PharmacistDashboard : Role = Pharmacist
+        [*] --> PatientDashboard : Role = Patient
+    end
+
+    AdministratorDashboard --> UserBranchManagement : "Manage Users / Branches"
+    AdministratorDashboard --> AuditLogViewer : "Audit Logs"
+    
+    ReceptionistDashboard --> PatientRegistration : "Register Patient"
+    ReceptionistDashboard --> AppointmentBooking : "Book/Reschedule"
+    ReceptionistDashboard --> BillingInvoices : "Invoices & Payment"
+
+    PatientRegistration --> PatientDetailView : "View Patient SGH-ID"
+    PatientDetailView --> AppointmentBooking : "Create Appointment"
+
+    DoctorDashboard --> PatientDetailView : "Search Patient"
+    PatientDetailView --> ClinicalNotesEntry : "Append Note"
+    PatientDetailView --> LabOrderCreation : "Create Lab Order"
+
+    LabTechDashboard --> LabOrderQueue : "Pending Orders"
+    LabOrderQueue --> LabResultEntry : "Enter results"
+
+    PharmacistDashboard --> PharmacyInventory : "Check Stock"
+    PharmacyInventory --> DispenseMedication : "Dispense Medicine"
+
+    BillingInvoices --> PaymentGatewayMock : "Process Transaction"
+
+    UserBranchManagement --> AdministratorDashboard : Return
+    AuditLogViewer --> AdministratorDashboard : Return
+    PatientRegistration --> ReceptionistDashboard : Return
+    AppointmentBooking --> ReceptionistDashboard : Return
+    ClinicalNotesEntry --> DoctorDashboard : Return
+    LabResultEntry --> LabTechDashboard : Return
+    DispenseMedication --> PharmacistDashboard : Return
+    PaymentGatewayMock --> BillingInvoices : Return
+
+    RoleDashboard --> LoginScreen : "Sign Out"

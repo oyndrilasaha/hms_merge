@@ -1,0 +1,121 @@
+classDiagram
+    class User {
+        +int user_id
+        +int branch_id
+        +string email
+        +string username
+        +string password_hash
+        +string status
+        +datetime last_login
+        +login() bool
+        +logout() bool
+        +verifySession() bool
+    }
+
+    class Patient {
+        +int patient_id
+        +int user_id
+        +string global_number
+        +string demographics
+        +string contact
+        +register() Patient
+        +getHistory() List
+        +updateContact() bool
+    }
+
+    class Staff {
+        +int staff_id
+        +int user_id
+        +int branch_id
+        +string profession
+        +string registration_no
+        +string status
+        +getSchedule() List
+        +updateStatus() bool
+    }
+
+    class Doctor {
+        +addNote(patient_id, content) bool
+        +orderLab(patient_id, test_type) LabOrder
+        +viewPatientNotes(patient_id) List
+    }
+
+    class Nurse {
+        +addObservation(patient_id, vitals) bool
+    }
+
+    class LabTechnician {
+        +enterResults(order_id, result_data) bool
+        +verifyTest(order_id) bool
+    }
+
+    class Pharmacist {
+        +dispenseStock(patient_id, medicine_id, qty) bool
+        +checkInventory() List
+    }
+
+    class Appointment {
+        +int appointment_id
+        +int patient_id
+        +int doctor_staff_id
+        +int branch_id
+        +datetime start_time
+        +datetime end_time
+        +string status
+        +string reason
+        +create() bool
+        +checkConflict() bool
+        +cancel() bool
+    }
+
+    class MedicalRecord {
+        +int record_id
+        +int patient_id
+        +int author_staff_id
+        +string record_type
+        +string content_ciphertext
+        +datetime created_at
+        +int version
+        +encryptContent() string
+        +decryptContent() string
+        +appendVersion() bool
+    }
+
+    class Invoice {
+        +int invoice_id
+        +int patient_id
+        +string visit_ref
+        +decimal total
+        +string status
+        +datetime issued_at
+        +calculateTotal() decimal
+        +issueInvoice() bool
+        +updatePaymentStatus() bool
+    }
+
+    class AuditLog {
+        +int audit_id
+        +string actor
+        +string role
+        +string action
+        +string object_type_id
+        +string outcome
+        +datetime timestamp
+        +string source
+        +writeEntry() bool
+        +readLogs() List
+    }
+
+    Staff <|-- Doctor : Inherits
+    Staff <|-- Nurse : Inherits
+    Staff <|-- LabTechnician : Inherits
+    Staff <|-- Pharmacist : Inherits
+
+    User "1" *-- "0..1" Staff : associates
+    User "1" *-- "0..1" Patient : associates
+    Patient "1" --> "0..*" Appointment : schedules
+    Doctor "1" --> "0..*" Appointment : conducts
+    Patient "1" --> "0..*" MedicalRecord : owns
+    Doctor "1" --> "0..*" MedicalRecord : writes
+    Patient "1" --> "0..*" Invoice : receives
+    AuditLog "1" --> "*" User : tracks

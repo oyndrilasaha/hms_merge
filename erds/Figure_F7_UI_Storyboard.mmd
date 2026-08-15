@@ -1,0 +1,51 @@
+stateDiagram-v2
+    [*] --> LoginScreen : OpenApplication
+    LoginScreen --> RoleDashboard : AuthenticateSuccess
+    LoginScreen --> LoginScreen : InvalidCredentials
+
+    state RoleDashboard {
+        [*] --> AdministratorDashboard : RoleAdmin
+        [*] --> ReceptionistDashboard : RoleReceptionist
+        [*] --> DoctorDashboard : RoleDoctor
+        [*] --> LabTechDashboard : RoleLabTech
+        [*] --> PharmacistDashboard : RolePharmacist
+        [*] --> PatientDashboard : RolePatient
+    }
+
+    AdministratorDashboard --> UserBranchManagement : ManageUsers
+    AdministratorDashboard --> AuditLogViewer : AuditLogs
+    
+    ReceptionistDashboard --> PatientRegistration : RegisterPatient
+    ReceptionistDashboard --> AppointmentBooking : BookReschedule
+    ReceptionistDashboard --> BillingInvoices : InvoicesPayment
+
+    PatientRegistration --> PatientDetailView : ViewPatient
+    PatientDetailView --> AppointmentBooking : CreateAppointment
+
+    DoctorDashboard --> PatientDetailView : SearchPatient
+    PatientDetailView --> ClinicalNotesEntry : AppendNote
+    PatientDetailView --> LabOrderCreation : CreateLabOrder
+
+    LabTechDashboard --> LabOrderQueue : PendingOrders
+    LabOrderQueue --> LabResultEntry : EnterResults
+
+    PharmacistDashboard --> PharmacyInventory : CheckStock
+    PharmacyInventory --> DispenseMedication : DispenseMedicine
+
+    BillingInvoices --> PaymentGatewayMock : ProcessTransaction
+
+    UserBranchManagement --> AdministratorDashboard : Return
+    AuditLogViewer --> AdministratorDashboard : Return
+    PatientRegistration --> ReceptionistDashboard : Return
+    AppointmentBooking --> ReceptionistDashboard : Return
+    ClinicalNotesEntry --> DoctorDashboard : Return
+    LabResultEntry --> LabTechDashboard : Return
+    DispenseMedication --> PharmacistDashboard : Return
+    PaymentGatewayMock --> BillingInvoices : Return
+
+    AdministratorDashboard --> LoginScreen : SignOut
+    ReceptionistDashboard --> LoginScreen : SignOut
+    DoctorDashboard --> LoginScreen : SignOut
+    LabTechDashboard --> LoginScreen : SignOut
+    PharmacistDashboard --> LoginScreen : SignOut
+    PatientDashboard --> LoginScreen : SignOut

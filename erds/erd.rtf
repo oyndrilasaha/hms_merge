@@ -1,0 +1,844 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2761
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 .SFNS-Regular_wdth_opsz110000_GRAD_wght1F40000;\f1\fnil\fcharset0 HelveticaNeue;\f2\fnil\fcharset0 .AppleSystemUIFontMonospaced-Regular;
+\f3\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;\red193\green193\blue193;\red14\green14\blue14;\red91\green91\blue91;
+\red17\green17\blue17;\red139\green139\blue139;\red109\green109\blue109;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c80000\c80000\c80000;\cssrgb\c6275\c6275\c6275;\cssrgb\c43137\c43137\c43137;
+\cssrgb\c8627\c8627\c8627;\cssrgb\c61569\c61569\c61569;\cssrgb\c50196\c50196\c50196\c34902;\cssrgb\c0\c0\c0;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 1. Figure 1. Proposed Layered Architecture\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 graph TD\cb1 \
+\cb5     %% Styling\cb1 \
+\cb5     classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;\cb1 \
+\cb5     classDef network fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;\cb1 \
+\cb5     classDef controller fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;\cb1 \
+\cb5     classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;\cb1 \
+\cb5     classDef data fill:#ffebee,stroke:#c62828,stroke-width:2px;\cb1 \
+\cb5     classDef crosscut fill:#eceff1,stroke:#37474f,stroke-width:2px,stroke-dasharray: 5 5;\cb1 \
+\
+\cb5     %% Client Layer\cb1 \
+\cb5     subgraph ClientLayer ["1. Presentation Layer (Installable PWA Client)"]\cb1 \
+\cb5         PWA["Installable PWA App Shell"]\cb1 \
+\cb5         PatientUI["Patient Interface"]\cb1 \
+\cb5         StaffUI["Hospital/Clinic Interface"]\cb1 \
+\cb5         AdminUI["Administration Interface"]\cb1 \
+\cb5         PWA --> PatientUI\cb1 \
+\cb5         PWA --> StaffUI\cb1 \
+\cb5         PWA --> AdminUI\cb1 \
+\cb5     end\cb1 \
+\cb5     class ClientLayer,PWA,PatientUI,StaffUI,AdminUI client;\cb1 \
+\
+\cb5     %% Network Transport\cb1 \
+\cb5     subgraph NetLayer ["2. Transport Security Layer"]\cb1 \
+\cb5         HTTPS["Secure Transport (HTTPS / TLS 1.3)"]\cb1 \
+\cb5     end\cb1 \
+\cb5     class NetLayer,HTTPS network;\cb1 \
+\
+\cb5     %% Controller & Service Layers\cb1 \
+\cb5     subgraph AppLayer ["3. Application & Service Layer (PHP/MVC Laravel)"]\cb1 \
+\cb5         subgraph Controllers ["Controllers (Request Gateways)"]\cb1 \
+\cb5             Router["Routing & Request Validation"]\cb1 \
+\cb5             RBAC["RBAC / Permission Middleware"]\cb1 \
+\cb5             Router --> RBAC\cb1 \
+\cb5         end\cb1 \
+\
+\cb5         subgraph CoreServices ["Modular Domain Services"]\cb1 \
+\cb5             AuthSvc["Auth & Session Service"]\cb1 \
+\cb5             PatSvc["Patient Registry Service"]\cb1 \
+\cb5             AptSvc["Appointment Scheduler"]\cb1 \
+\cb5             ClinSvc["Clinical Notes Service"]\cb1 \
+\cb5             LabSvc["Laboratory Orchestrator"]\cb1 \
+\cb5             PharmSvc["Pharmacy & Inventory"]\cb1 \
+\cb5             BillSvc["Billing & Invoice Engine"]\cb1 \
+\cb5         end\cb1 \
+\
+\cb5         subgraph Adapters ["Integration Adapters"]\cb1 \
+\cb5             SMSAdapter["SMS & Email Queue Adapter"]\cb1 \
+\cb5             PayAdapter["Payment Gateway Adapter"]\cb1 \
+\cb5             AIAdapter["Advisory AI Adapter"]\cb1 \
+\cb5         end\cb1 \
+\cb5     end\cb1 \
+\cb5     class AppLayer,Controllers,Router,RBAC controller;\cb1 \
+\cb5     class CoreServices,AuthSvc,PatSvc,AptSvc,ClinSvc,LabSvc,PharmSvc,BillSvc service;\cb1 \
+\cb5     class Adapters,SMSAdapter,PayAdapter,AIAdapter controller;\cb1 \
+\
+\cb5     %% Data Layer\cb1 \
+\cb5     subgraph DataLayer ["4. Persistence & Storage Layer"]\cb1 \
+\cb5         MySQL[("MySQL Transactional Database<br>(Tables, FKs, Indexes)")]\cb1 \
+\cb5         PrivateStorage[("Private File Storage<br>(Outside Web Root)")]\cb1 \
+\cb5     end\cb1 \
+\cb5     class DataLayer,MySQL,PrivateStorage data;\cb1 \
+\
+\cb5     %% Cross-Cutting Controls\cb1 \
+\cb5     subgraph CrossCut ["Cross-Cutting Services (System-Wide Security & Compliance)"]\cb1 \
+\cb5         AuditLog["Security Audit Logger<br>(Append-Only Trail)"]\cb1 \
+\cb5         Encrypt["Encryption Engine<br>(Scrypt/Salt Hashing, AES-256)"]\cb1 \
+\cb5         BackupSvc["Backup & Disaster Recovery Manager<br>(Encrypted Snapshots)"]\cb1 \
+\cb5         MonSvc["Monitoring, Intrusion Detection & Queue Alerting"]\cb1 \
+\cb5     end\cb1 \
+\cb5     class CrossCut,AuditLog,Encrypt,BackupSvc,MonSvc crosscut;\cb1 \
+\
+\cb5     %% Flow Connections\cb1 \
+\cb5     ClientLayer -->|Encrypted Requests| HTTPS\cb1 \
+\cb5     HTTPS -->|Authorized Endpoints| Router\cb1 \
+\cb5     RBAC -->|Delegate Work| CoreServices\cb1 \
+\cb5     CoreServices -->|Third-Party Calls| Adapters\cb1 \
+\cb5     CoreServices -->|Read/Write Records| MySQL\cb1 \
+\cb5     LabSvc -->|Save Reports| PrivateStorage\cb1 \
+\
+\cb5     %% Cross-cutting connections (Dashed lines to represent universal coverage)\cb1 \
+\cb5     AuditLog -.-> AppLayer\cb1 \
+\cb5     Encrypt -.-> DataLayer\cb1 \
+\cb5     Encrypt -.-> AppLayer\cb1 \
+\cb5     BackupSvc -.-> DataLayer\cb1 \
+\cb5     MonSvc -.-> AppLayer\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \cb7 \strokec8 \
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \strokec2 2. Figure F1. Use-Case Diagram (All-Role Model)\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 graph LR\cb1 \
+\cb5     %% Primary Actors (Initiators)\cb1 \
+\cb5     subgraph Primary ["Primary Actors (Left)"]\cb1 \
+\cb5         Patient((Patient))\cb1 \
+\cb5         Receptionist((Receptionist))\cb1 \
+\cb5         Doctor((Doctor))\cb1 \
+\cb5         Nurse((Nurse))\cb1 \
+\cb5         Tech((Lab Tech))\cb1 \
+\cb5         Pharm((Pharmacist))\cb1 \
+\cb5         Manager((Branch Manager))\cb1 \
+\cb5         Admin((Admin))\cb1 \
+\cb5     end\cb1 \
+\
+\cb5     %% Use Cases (Center Processes)\cb1 \
+\cb5     subgraph UseCases ["St George HMS Use Cases (Center)"]\cb1 \
+\cb5         UC1([UC01: Register & Authenticate])\cb1 \
+\cb5         UC2([UC02: Manage Users & Branches])\cb1 \
+\cb5         UC3([UC03: Register Patient])\cb1 \
+\cb5         UC4([UC04: Manage Appointment])\cb1 \
+\cb5         UC5([UC05: Record Clinical Notes])\cb1 \
+\cb5         UC5b([UC05b: Record Observations])\cb1 \
+\cb5         UC6([UC06: Process Lab Test])\cb1 \
+\cb5         UC7([UC07: Dispense Medicine])\cb1 \
+\cb5         UC8([UC08: Invoice & Payment])\cb1 \
+\cb5         UC9([UC09: Generate Reports])\cb1 \
+\cb5     end\cb1 \
+\
+\cb5     %% Secondary Actors / External Systems (Receivers)\cb1 \
+\cb5     subgraph Secondary ["Secondary Actors (Right)"]\cb1 \
+\cb5         Gateway\{\{"Payment Gateway"\}\}\cb1 \
+\cb5         SMS\{\{"SMS / Email Gateway"\}\}\cb1 \
+\cb5         SecDoc((Doctor))\cb1 \
+\cb5         SecPatient((Patient))\cb1 \
+\cb5     end\cb1 \
+\
+\cb5     %% Primary Actors initiating Use Cases\cb1 \
+\cb5     Patient --> UC1\cb1 \
+\cb5     Patient --> UC4\cb1 \
+\cb5     Patient --> UC8\cb1 \
+\cb5     \cb1 \
+\cb5     Receptionist --> UC3\cb1 \
+\cb5     Receptionist --> UC4\cb1 \
+\cb5     Receptionist --> UC8\cb1 \
+\cb5     \cb1 \
+\cb5     Doctor --> UC5\cb1 \
+\cb5     Doctor --> UC6\cb1 \
+\cb5     \cb1 \
+\cb5     Nurse --> UC5b\cb1 \
+\cb5     \cb1 \
+\cb5     Tech --> UC6\cb1 \
+\cb5     \cb1 \
+\cb5     Pharm --> UC7\cb1 \
+\cb5     \cb1 \
+\cb5     Manager --> UC9\cb1 \
+\cb5     \cb1 \
+\cb5     Admin --> UC2\cb1 \
+\cb5     Admin --> UC1\cb1 \
+\
+\cb5     %% Use Cases linking to Secondary Actors (dashed arrows)\cb1 \
+\cb5     UC1 -.-> SMS\cb1 \
+\cb5     UC3 -.-> SecPatient\cb1 \
+\cb5     UC4 -.-> SecDoc\cb1 \
+\cb5     UC4 -.-> SMS\cb1 \
+\cb5     UC6 -.-> SecDoc\cb1 \
+\cb5     UC6 -.-> SMS\cb1 \
+\cb5     UC7 -.-> SecPatient\cb1 \
+\cb5     UC8 -.-> Gateway\cb1 \
+\cb5     UC8 -.-> SMS\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \cb7 \strokec8 \
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \strokec2 3. Figure F2. Core Entity-Relationship Diagram (ERD)\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 erDiagram\cb1 \
+\cb5     BRANCH \{\cb1 \
+\cb5         int branch_id PK\cb1 \
+\cb5         string name\cb1 \
+\cb5         string state\cb1 \
+\cb5         string address\cb1 \
+\cb5         string contact\cb1 \
+\cb5         string status\cb1 \
+\cb5     \}\cb1 \
+\cb5     ROLE \{\cb1 \
+\cb5         int role_id PK\cb1 \
+\cb5         string name\cb1 \
+\cb5         string description\cb1 \
+\cb5     \}\cb1 \
+\cb5     USER \{\cb1 \
+\cb5         int user_id PK\cb1 \
+\cb5         int branch_id FK\cb1 \
+\cb5         string email\cb1 \
+\cb5         string username\cb1 \
+\cb5         string password_hash\cb1 \
+\cb5         string status\cb1 \
+\cb5         datetime last_login\cb1 \
+\cb5     \}\cb1 \
+\cb5     USER_ROLE \{\cb1 \
+\cb5         int user_id FK\cb1 \
+\cb5         int role_id FK\cb1 \
+\cb5         datetime effective_from\cb1 \
+\cb5         datetime effective_to\cb1 \
+\cb5     \}\cb1 \
+\cb5     PATIENT \{\cb1 \
+\cb5         int patient_id PK\cb1 \
+\cb5         int user_id FK\cb1 \
+\cb5         string global_number\cb1 \
+\cb5         string demographics\cb1 \
+\cb5         string contact\cb1 \
+\cb5     \}\cb1 \
+\cb5     STAFF \{\cb1 \
+\cb5         int staff_id PK\cb1 \
+\cb5         int user_id FK\cb1 \
+\cb5         int branch_id FK\cb1 \
+\cb5         string profession\cb1 \
+\cb5         string registration_no\cb1 \
+\cb5         string status\cb1 \
+\cb5     \}\cb1 \
+\cb5     SCHEDULE \{\cb1 \
+\cb5         int schedule_id PK\cb1 \
+\cb5         int staff_id FK\cb1 \
+\cb5         int branch_id FK\cb1 \
+\cb5         datetime start_time\cb1 \
+\cb5         datetime end_time\cb1 \
+\cb5         string type\cb1 \
+\cb5     \}\cb1 \
+\cb5     APPOINTMENT \{\cb1 \
+\cb5         int appointment_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         int doctor_staff_id FK\cb1 \
+\cb5         int branch_id FK\cb1 \
+\cb5         datetime start_time\cb1 \
+\cb5         datetime end_time\cb1 \
+\cb5         string status\cb1 \
+\cb5         string reason\cb1 \
+\cb5     \}\cb1 \
+\cb5     MEDICAL_RECORD \{\cb1 \
+\cb5         int record_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         int author_staff_id FK\cb1 \
+\cb5         string record_type\cb1 \
+\cb5         string content_ciphertext\cb1 \
+\cb5         datetime created_at\cb1 \
+\cb5         int version\cb1 \
+\cb5     \}\cb1 \
+\cb5     ADMISSION \{\cb1 \
+\cb5         int admission_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         int branch_id FK\cb1 \
+\cb5         int bed_id FK\cb1 \
+\cb5         datetime admitted_at\cb1 \
+\cb5         datetime discharged_at\cb1 \
+\cb5         string status\cb1 \
+\cb5     \}\cb1 \
+\cb5     BED \{\cb1 \
+\cb5         int bed_id PK\cb1 \
+\cb5         int branch_id FK\cb1 \
+\cb5         string ward\cb1 \
+\cb5         string room\cb1 \
+\cb5         string number\cb1 \
+\cb5         string status\cb1 \
+\cb5     \}\cb1 \
+\cb5     LAB_ORDER \{\cb1 \
+\cb5         int order_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         int requester_id FK\cb1 \
+\cb5         string test_type\cb1 \
+\cb5         string status\cb1 \
+\cb5         datetime requested_at\cb1 \
+\cb5     \}\cb1 \
+\cb5     LAB_RESULT \{\cb1 \
+\cb5         int result_id PK\cb1 \
+\cb5         int order_id FK\cb1 \
+\cb5         int technician_id FK\cb1 \
+\cb5         string result_ciphertext\cb1 \
+\cb5         string file_uri\cb1 \
+\cb5         datetime verified_at\cb1 \
+\cb5     \}\cb1 \
+\cb5     MEDICINE \{\cb1 \
+\cb5         int medicine_id PK\cb1 \
+\cb5         string name\cb1 \
+\cb5         string batch\cb1 \
+\cb5         date expiry\cb1 \
+\cb5         int threshold\cb1 \
+\cb5         int supplier_id\cb1 \
+\cb5     \}\cb1 \
+\cb5     INVENTORY_TRANSACTION \{\cb1 \
+\cb5         int transaction_id PK\cb1 \
+\cb5         int branch_id FK\cb1 \
+\cb5         int medicine_id FK\cb1 \
+\cb5         int qty\cb1 \
+\cb5         string type\cb1 \
+\cb5         int actor_id FK\cb1 \
+\cb5         datetime timestamp\cb1 \
+\cb5     \}\cb1 \
+\cb5     PRESCRIPTION \{\cb1 \
+\cb5         int prescription_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         int prescriber_id FK\cb1 \
+\cb5         datetime issued_at\cb1 \
+\cb5         string status\cb1 \
+\cb5     \}\cb1 \
+\cb5     INVOICE \{\cb1 \
+\cb5         int invoice_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         string visit_ref\cb1 \
+\cb5         decimal total\cb1 \
+\cb5         string status\cb1 \
+\cb5         datetime issued_at\cb1 \
+\cb5     \}\cb1 \
+\cb5     PAYMENT \{\cb1 \
+\cb5         int payment_id PK\cb1 \
+\cb5         int invoice_id FK\cb1 \
+\cb5         string gateway_reference\cb1 \
+\cb5         decimal amount\cb1 \
+\cb5         string status\cb1 \
+\cb5         datetime received_at\cb1 \
+\cb5     \}\cb1 \
+\cb5     CONSENT \{\cb1 \
+\cb5         int consent_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         string purpose\cb1 \
+\cb5         string notice_version\cb1 \
+\cb5         string state\cb1 \
+\cb5         datetime changed_at\cb1 \
+\cb5     \}\cb1 \
+\cb5     NOTIFICATION \{\cb1 \
+\cb5         int notification_id PK\cb1 \
+\cb5         string recipient\cb1 \
+\cb5         string channel\cb1 \
+\cb5         string template\cb1 \
+\cb5         string related_ref\cb1 \
+\cb5         string status\cb1 \
+\cb5         datetime sent_at\cb1 \
+\cb5     \}\cb1 \
+\cb5     AUDIT_LOG \{\cb1 \
+\cb5         int audit_id PK\cb1 \
+\cb5         string actor\cb1 \
+\cb5         string role\cb1 \
+\cb5         string action\cb1 \
+\cb5         string object_type_id\cb1 \
+\cb5         string outcome\cb1 \
+\cb5         datetime timestamp\cb1 \
+\cb5         string source\cb1 \
+\cb5     \}\cb1 \
+\cb5     BACKUP_JOB \{\cb1 \
+\cb5         int job_id PK\cb1 \
+\cb5         string type\cb1 \
+\cb5         datetime started_at\cb1 \
+\cb5         datetime ended_at\cb1 \
+\cb5         string status\cb1 \
+\cb5         string location_ref\cb1 \
+\cb5         string verification\cb1 \
+\cb5     \}\cb1 \
+\cb5     FEEDBACK \{\cb1 \
+\cb5         int feedback_id PK\cb1 \
+\cb5         int patient_id FK\cb1 \
+\cb5         string comment\cb1 \
+\cb5         string sentiment\cb1 \
+\cb5         int reviewed_by FK\cb1 \
+\cb5         datetime created_at\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     BRANCH ||--o\{ USER : "hosts"\cb1 \
+\cb5     BRANCH ||--o\{ STAFF : "employs"\cb1 \
+\cb5     BRANCH ||--o\{ BED : "manages"\cb1 \
+\cb5     BRANCH ||--o\{ APPOINTMENT : "schedules"\cb1 \
+\cb5     USER ||--o\{ USER_ROLE : "assigned"\cb1 \
+\cb5     ROLE ||--o\{ USER_ROLE : "defines"\cb1 \
+\cb5     USER ||--o| PATIENT : "links"\cb1 \
+\cb5     USER ||--o| STAFF : "identifies"\cb1 \
+\cb5     PATIENT ||--o\{ APPOINTMENT : "books"\cb1 \
+\cb5     PATIENT ||--o\{ MEDICAL_RECORD : "has"\cb1 \
+\cb5     PATIENT ||--o\{ ADMISSION : "admitted"\cb1 \
+\cb5     PATIENT ||--o\{ LAB_ORDER : "receives"\cb1 \
+\cb5     PATIENT ||--o\{ PRESCRIPTION : "gets"\cb1 \
+\cb5     PATIENT ||--o\{ INVOICE : "billed"\cb1 \
+\cb5     PATIENT ||--o\{ CONSENT : "provides"\cb1 \
+\cb5     PATIENT ||--o\{ FEEDBACK : "submits"\cb1 \
+\cb5     STAFF ||--o\{ SCHEDULE : "allocated"\cb1 \
+\cb5     STAFF ||--o\{ APPOINTMENT : "treats"\cb1 \
+\cb5     STAFF ||--o\{ MEDICAL_RECORD : "records"\cb1 \
+\cb5     STAFF ||--o\{ LAB_ORDER : "requests"\cb1 \
+\cb5     STAFF ||--o\{ LAB_RESULT : "completes"\cb1 \
+\cb5     BED ||--o\{ ADMISSION : "allocates"\cb1 \
+\cb5     LAB_ORDER ||--o\{ LAB_RESULT : "results"\cb1 \
+\cb5     MEDICINE ||--o\{ INVENTORY_TRANSACTION : "tracked"\cb1 \
+\cb5     INVOICE ||--o\{ PAYMENT : "pays"\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \cb7 \strokec8 \
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \strokec2 4. Figure F3. Class Diagram for the Core Object Model\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 classDiagram\cb1 \
+\cb5     class User \{\cb1 \
+\cb5         +int user_id\cb1 \
+\cb5         +int branch_id\cb1 \
+\cb5         +string email\cb1 \
+\cb5         +string username\cb1 \
+\cb5         +string password_hash\cb1 \
+\cb5         +string status\cb1 \
+\cb5         +datetime last_login\cb1 \
+\cb5         +login() bool\cb1 \
+\cb5         +logout() bool\cb1 \
+\cb5         +verifySession() bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class Patient \{\cb1 \
+\cb5         +int patient_id\cb1 \
+\cb5         +int user_id\cb1 \
+\cb5         +string global_number\cb1 \
+\cb5         +string demographics\cb1 \
+\cb5         +string contact\cb1 \
+\cb5         +register() Patient\cb1 \
+\cb5         +getHistory() List\cb1 \
+\cb5         +updateContact() bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class Staff \{\cb1 \
+\cb5         +int staff_id\cb1 \
+\cb5         +int user_id\cb1 \
+\cb5         +int branch_id\cb1 \
+\cb5         +string profession\cb1 \
+\cb5         +string registration_no\cb1 \
+\cb5         +string status\cb1 \
+\cb5         +getSchedule() List\cb1 \
+\cb5         +updateStatus() bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class Doctor \{\cb1 \
+\cb5         +addNote(patient_id, content) bool\cb1 \
+\cb5         +orderLab(patient_id, test_type) LabOrder\cb1 \
+\cb5         +viewPatientNotes(patient_id) List\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class Nurse \{\cb1 \
+\cb5         +addObservation(patient_id, vitals) bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class LabTechnician \{\cb1 \
+\cb5         +enterResults(order_id, result_data) bool\cb1 \
+\cb5         +verifyTest(order_id) bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class Pharmacist \{\cb1 \
+\cb5         +dispenseStock(patient_id, medicine_id, qty) bool\cb1 \
+\cb5         +checkInventory() List\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class Appointment \{\cb1 \
+\cb5         +int appointment_id\cb1 \
+\cb5         +int patient_id\cb1 \
+\cb5         +int doctor_staff_id\cb1 \
+\cb5         +int branch_id\cb1 \
+\cb5         +datetime start_time\cb1 \
+\cb5         +datetime end_time\cb1 \
+\cb5         +string status\cb1 \
+\cb5         +string reason\cb1 \
+\cb5         +create() bool\cb1 \
+\cb5         +checkConflict() bool\cb1 \
+\cb5         +cancel() bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class MedicalRecord \{\cb1 \
+\cb5         +int record_id\cb1 \
+\cb5         +int patient_id\cb1 \
+\cb5         +int author_staff_id\cb1 \
+\cb5         +string record_type\cb1 \
+\cb5         +string content_ciphertext\cb1 \
+\cb5         +datetime created_at\cb1 \
+\cb5         +int version\cb1 \
+\cb5         +encryptContent() string\cb1 \
+\cb5         +decryptContent() string\cb1 \
+\cb5         +appendVersion() bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class Invoice \{\cb1 \
+\cb5         +int invoice_id\cb1 \
+\cb5         +int patient_id\cb1 \
+\cb5         +string visit_ref\cb1 \
+\cb5         +decimal total\cb1 \
+\cb5         +string status\cb1 \
+\cb5         +datetime issued_at\cb1 \
+\cb5         +calculateTotal() decimal\cb1 \
+\cb5         +issueInvoice() bool\cb1 \
+\cb5         +updatePaymentStatus() bool\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     class AuditLog \{\cb1 \
+\cb5         +int audit_id\cb1 \
+\cb5         +string actor\cb1 \
+\cb5         +string role\cb1 \
+\cb5         +string action\cb1 \
+\cb5         +string object_type_id\cb1 \
+\cb5         +string outcome\cb1 \
+\cb5         +datetime timestamp\cb1 \
+\cb5         +string source\cb1 \
+\cb5         +writeEntry() bool\cb1 \
+\cb5         +readLogs() List\cb1 \
+\cb5     \}\cb1 \
+\
+\cb5     Staff <|-- Doctor : Inherits\cb1 \
+\cb5     Staff <|-- Nurse : Inherits\cb1 \
+\cb5     Staff <|-- LabTechnician : Inherits\cb1 \
+\cb5     Staff <|-- Pharmacist : Inherits\cb1 \
+\
+\cb5     User "1" *-- "1" Staff : associates\cb1 \
+\cb5     User "1" *-- "0..1" Patient : associates\cb1 \
+\cb5     Patient "1" --> "0..*" Appointment : schedules\cb1 \
+\cb5     Doctor "1" --> "0..*" Appointment : conducts\cb1 \
+\cb5     Patient "1" --> "0..*" MedicalRecord : owns\cb1 \
+\cb5     Doctor "1" --> "0..*" MedicalRecord : writes\cb1 \
+\cb5     Patient "1" --> "0..*" Invoice : receives\cb1 \
+\cb5     AuditLog "1" --> "*" User : tracks\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \cb7 \strokec8 \
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \strokec2 5. Figure F4. Level 0 Data-Flow Diagram (Context Diagram)\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 graph TD\cb1 \
+\cb5     %% System Process\cb1 \
+\cb5     System[("0.0 St George Hospital Management System")]\cb1 \
+\
+\cb5     %% External Entities\cb1 \
+\cb5     Patient["Patient"]\cb1 \
+\cb5     Receptionist["Receptionist"]\cb1 \
+\cb5     Doctor["Doctor"]\cb1 \
+\cb5     Nurse["Nurse"]\cb1 \
+\cb5     Tech["Lab Technician"]\cb1 \
+\cb5     Pharm["Pharmacist"]\cb1 \
+\cb5     Admin["System Administrator"]\cb1 \
+\cb5     Manager["Branch Manager"]\cb1 \
+\cb5     Gateway["Payment Gateway"]\cb1 \
+\
+\cb5     %% Data Flows\cb1 \
+\cb5     Receptionist -->|Register Patient / Book Appointment| System\cb1 \
+\cb5     System -->|Confirmations & Schedule Details| Patient\cb1 \
+\cb5     \cb1 \
+\cb5     Doctor -->|Clinical Notes / Lab Test Orders| System\cb1 \
+\cb5     System -->|Lab Orders & Request Queue| Tech\cb1 \
+\cb5     Tech -->|Lab Test Results| System\cb1 \
+\cb5     \cb1 \
+\cb5     Nurse -->|Ward Observations| System\cb1 \
+\cb5     \cb1 \
+\cb5     Pharm -->|Dispense Medication / Stock Update| System\cb1 \
+\cb5     System -->|Stock Alerts & Reorders| Pharm\cb1 \
+\cb5     \cb1 \
+\cb5     System -->|Invoice Details| Patient\cb1 \
+\cb5     Patient -->|Payment Processing| System\cb1 \
+\cb5     System -->|Transaction Request| Gateway\cb1 \
+\cb5     Gateway -->|Transaction Auth/Capture| System\cb1 \
+\
+\cb5     Admin -->|Manage User Profiles & Branch Reference Data| System\cb1 \
+\cb5     System -->|Security Audits & Reports| Admin\cb1 \
+\
+\cb5     Manager -->|Request Branch Operations Report| System\cb1 \
+\cb5     System -->|Operational Performance Metrics| Manager\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \cb7 \strokec8 \
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \strokec2 6. Figure F5. Level 1 Data-Flow Diagram\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 graph TD\cb1 \
+\cb5     %% External Entities\cb1 \
+\cb5     subgraph External_Entities ["External Roles"]\cb1 \
+\cb5         Rec["Receptionist"]\cb1 \
+\cb5         Doc["Doctor"]\cb1 \
+\cb5         Tech["Lab Technician"]\cb1 \
+\cb5         Pharm["Pharmacist"]\cb1 \
+\cb5         Admin["Administrator"]\cb1 \
+\cb5     end\cb1 \
+\
+\cb5     %% Processes\cb1 \
+\cb5     subgraph Processes ["Node.js API Services"]\cb1 \
+\cb5         P1["1.0 Auth & Session Management"]\cb1 \
+\cb5         P2["2.0 Patient Management"]\cb1 \
+\cb5         P3["3.0 Appointment Scheduling"]\cb1 \
+\cb5         P4["4.0 Clinical Records"]\cb1 \
+\cb5         P5["5.0 Laboratory Workflow"]\cb1 \
+\cb5         P6["6.0 Inventory & Dispensing"]\cb1 \
+\cb5         P7["7.0 Billing & Invoicing"]\cb1 \
+\cb5         P8["8.0 Audit Logger"]\cb1 \
+\cb5     end\cb1 \
+\
+\cb5     %% Data Stores\cb1 \
+\cb5     subgraph DB ["SQLite Database Stores"]\cb1 \
+\cb5         D1[("Users / Sessions")]\cb1 \
+\cb5         D2[("Patient Profiles")]\cb1 \
+\cb5         D3[("Appointments")]\cb1 \
+\cb5         D4[("Clinical Notes")]\cb1 \
+\cb5         D5[("Lab Orders")]\cb1 \
+\cb5         D6[("Inventory")]\cb1 \
+\cb5         D7[("Invoices")]\cb1 \
+\cb5         D8[("Audit Logs")]\cb1 \
+\cb5     end\cb1 \
+\
+\cb5     %% Flows\cb1 \
+\cb5     Rec -->|Login Request| P1\cb1 \
+\cb5     P1 -->|Query Credentials| D1\cb1 \
+\cb5     P1 -->|Create Session| D1\cb1 \
+\cb5     P1 -->|Write Audit| P8\cb1 \
+\
+\cb5     Rec -->|Register Patient Details| P2\cb1 \
+\cb5     P2 -->|Save Profile| D2\cb1 \
+\cb5     P2 -->|Trigger Audit| P8\cb1 \
+\
+\cb5     Rec -->|Book Appointment Request| P3\cb1 \
+\cb5     P3 -->|Check Conflict & Doctor Avail| D3\cb1 \
+\cb5     P3 -->|Save Appointment| D3\cb1 \
+\cb5     P3 -->|Trigger Audit| P8\cb1 \
+\
+\cb5     Doc -->|Append Clinical Notes| P4\cb1 \
+\cb5     P4 -->|Save Clinical Record| D4\cb1 \
+\cb5     P4 -->|Trigger Audit| P8\cb1 \
+\
+\cb5     Doc -->|Order Laboratory Test| P5\cb1 \
+\cb5     Tech -->|Update Results & Status| P5\cb1 \
+\cb5     P5 -->|Create/Update Order| D5\cb1 \
+\cb5     P5 -->|Trigger Audit| P8\cb1 \
+\
+\cb5     Pharm -->|Dispense Request| P6\cb1 \
+\cb5     P6 -->|Check Stock & Decrement| D6\cb1 \
+\cb5     P6 -->|Record Dispensing| D6\cb1 \
+\cb5     P6 -->|Trigger Audit| P8\cb1 \
+\
+\cb5     Rec -->|Generate Invoice / Mark Paid| P7\cb1 \
+\cb5     P7 -->|Read Lab/Med Details| D5\cb1 \
+\cb5     P7 -->|Write Invoice Data| D7\cb1 \
+\cb5     P7 -->|Trigger Audit| P8\cb1 \
+\
+\cb5     Admin -->|View Log File| P8\cb1 \
+\cb5     P8 -->|Query Audit File| D8\cb1 \
+\cb5     P8 -->|Write Event| D8\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \cb7 \strokec8 \
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \strokec2 7. Figure F6. End-to-End System Sequence Diagram\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 sequenceDiagram\cb1 \
+\cb5     autonumber\cb1 \
+\cb5     actor Rec as Receptionist\cb1 \
+\cb5     actor Doc as Doctor\cb1 \
+\cb5     actor Tech as Lab Tech\cb1 \
+\cb5     actor Pharm as Pharmacist\cb1 \
+\cb5     participant Sys as Node.js HTTP Server\cb1 \
+\cb5     database DB as SQLite Database\cb1 \
+\
+\cb5     %% Stage 1: Auth\cb1 \
+\cb5     Note over Rec, Sys: 1. Authentication Stage\cb1 \
+\cb5     Rec->>Sys: POST /api/auth/login (username, password)\cb1 \
+\cb5     Sys->>DB: Query user credentials & verify hash\cb1 \
+\cb5     DB-->>Sys: Return user record (Role: Receptionist)\cb1 \
+\cb5     Sys-->>Rec: 200 OK (Set-Cookie: sgh_session, CSRF token)\cb1 \
+\
+\cb5     %% Stage 2: Patient Registration\cb1 \
+\cb5     Note over Rec, Sys: 2. Patient Registration Stage\cb1 \
+\cb5     Rec->>Sys: POST /api/patients (demographics, contact) [With Session & CSRF]\cb1 \
+\cb5     Sys->>Sys: Validate fields (names, phone, email format)\cb1 \
+\cb5     Sys->>DB: INSERT INTO patients (global_number, demographics)\cb1 \
+\cb5     DB-->>Sys: Confirm insert (patient_id: 3, MRN: SGH-000003)\cb1 \
+\cb5     Sys->>DB: INSERT INTO audit_logs (PATIENT_CREATED)\cb1 \
+\cb5     Sys-->>Rec: 201 Created (MRN: SGH-000003)\cb1 \
+\
+\cb5     %% Stage 3: Appointment Booking (Success & Conflict Check)\cb1 \
+\cb5     Note over Rec, Sys: 3. Appointment Booking & Conflict Prevention\cb1 \
+\cb5     Rec->>Sys: POST /api/appointments (patient_id: 3, doctor_id: 2, start: 14:00, end: 14:30)\cb1 \
+\cb5     Sys->>DB: Query appointments for Doctor 2 between 14:00 and 14:30\cb1 \
+\cb5     DB-->>Sys: Return 0 matching rows (No overlap)\cb1 \
+\cb5     Sys->>DB: INSERT INTO appointments\cb1 \
+\cb5     DB-->>Sys: Confirm insert (appointment_id: 45)\cb1 \
+\cb5     Sys-->>Rec: 201 Created (Appointment scheduled)\cb1 \
+\
+\cb5     Rec->>Sys: POST /api/appointments (patient_id: 4, doctor_id: 2, start: 14:15, end: 14:45)\cb1 \
+\cb5     Sys->>DB: Query appointments for Doctor 2 between 14:15 and 14:45\cb1 \
+\cb5     DB-->>Sys: Return 1 matching row (appointment_id: 45 overlaps!)\cb1 \
+\cb5     Sys-->>Rec: 409 Conflict (Doctor is busy)\cb1 \
+\
+\cb5     %% Stage 4: Clinical Consultation\cb1 \
+\cb5     Note over Doc, Sys: 4. Clinical Note & Lab Order Stage\cb1 \
+\cb5     Doc->>Sys: POST /api/clinical-notes (patient_id: 3, note: "Patient exhibits symptoms...")\cb1 \
+\cb5     Sys->>DB: INSERT INTO medical_records\cb1 \
+\cb5     DB-->>Sys: Confirm insert\cb1 \
+\cb5     Sys-->>Doc: 201 Created (Note appended)\cb1 \
+\
+\cb5     Doc->>Sys: POST /api/lab-orders (patient_id: 3, test_type: "Blood Panel")\cb1 \
+\cb5     Sys->>DB: INSERT INTO lab_orders (status: PENDING)\cb1 \
+\cb5     DB-->>Sys: Confirm insert (order_id: 12)\cb1 \
+\cb5     Sys-->>Doc: 201 Created (Lab order placed)\cb1 \
+\
+\cb5     %% Stage 5: Lab Execution\cb1 \
+\cb5     Note over Tech, Sys: 5. Lab Results Entry Stage\cb1 \
+\cb5     Tech->>Sys: PATCH /api/lab-orders/12 (result: "Normal", status: COMPLETED)\cb1 \
+\cb5     Sys->>DB: UPDATE lab_orders SET status = COMPLETED, INSERT INTO lab_results\cb1 \
+\cb5     DB-->>Sys: Confirm updates\cb1 \
+\cb5     Sys-->>Tech: 200 OK (Results recorded)\cb1 \
+\
+\cb5     %% Stage 6: Pharmacy Dispensing\cb1 \
+\cb5     Note over Pharm, Sys: 6. Medication Dispense Stage\cb1 \
+\cb5     Pharm->>Sys: POST /api/medications/dispense (patient_id: 3, medicine_id: 5, qty: 2)\cb1 \
+\cb5     Sys->>DB: Query inventory balance for Medicine 5 (Batch A)\cb1 \
+\cb5     DB-->>Sys: Return stock: 10, expiry: 2028-12-31\cb1 \
+\cb5     Sys->>DB: UPDATE inventory (stock - 2) & INSERT INTO inventory_transactions\cb1 \
+\cb5     DB-->>Sys: Confirm update\cb1 \
+\cb5     Sys-->>Pharm: 200 OK (Dispensing recorded, stock updated)\cb1 \
+\
+\cb5     %% Stage 7: Invoicing\cb1 \
+\cb5     Note over Rec, Sys: 7. Billing Stage\cb1 \
+\cb5     Rec->>Sys: PATCH /api/invoices/99 (status: PAID)\cb1 \
+\cb5     Sys->>DB: UPDATE invoices SET status = PAID, INSERT INTO payments\cb1 \
+\cb5     DB-->>Sys: Confirm update\cb1 \
+\cb5     Sys-->>Rec: 200 OK (Payment confirmed)\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf0 \cb7 \strokec8 \
+\pard\pardeftab720\sa60\partightenfactor0
+
+\f0\fs24 \cf2 \cb3 \strokec2 8. Figure F7. Proposed UI Storyboard\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs21 \cf4 \cb5 \strokec4 text\cb1 \
+\pard\pardeftab720\qc\partightenfactor0
+
+\f2\fs28 \cf6 \strokec6 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs18 \cf2 \cb5 \strokec2 stateDiagram-v2\cb1 \
+\cb5     [*] --> LoginScreen : Open Application\cb1 \
+\cb5     LoginScreen --> RoleDashboard : Authenticate (Success)\cb1 \
+\cb5     LoginScreen --> LoginScreen : Invalid Credentials (Error Alert)\cb1 \
+\
+\cb5     state RoleDashboard \{\cb1 \
+\cb5         [*] --> AdministratorDashboard : Role = Admin\cb1 \
+\cb5         [*] --> ReceptionistDashboard : Role = Receptionist\cb1 \
+\cb5         [*] --> DoctorDashboard : Role = Doctor\cb1 \
+\cb5         [*] --> LabTechDashboard : Role = LabTech\cb1 \
+\cb5         [*] --> PharmacistDashboard : Role = Pharmacist\cb1 \
+\cb5         [*] --> PatientDashboard : Role = Patient\cb1 \
+\cb5     end\cb1 \
+\
+\cb5     AdministratorDashboard --> UserBranchManagement : "Manage Users / Branches"\cb1 \
+\cb5     AdministratorDashboard --> AuditLogViewer : "Audit Logs"\cb1 \
+\cb5     \cb1 \
+\cb5     ReceptionistDashboard --> PatientRegistration : "Register Patient"\cb1 \
+\cb5     ReceptionistDashboard --> AppointmentBooking : "Book/Reschedule"\cb1 \
+\cb5     ReceptionistDashboard --> BillingInvoices : "Invoices & Payment"\cb1 \
+\
+\cb5     PatientRegistration --> PatientDetailView : "View Patient SGH-ID"\cb1 \
+\cb5     PatientDetailView --> AppointmentBooking : "Create Appointment"\cb1 \
+\
+\cb5     DoctorDashboard --> PatientDetailView : "Search Patient"\cb1 \
+\cb5     PatientDetailView --> ClinicalNotesEntry : "Append Note"\cb1 \
+\cb5     PatientDetailView --> LabOrderCreation : "Create Lab Order"\cb1 \
+\
+\cb5     LabTechDashboard --> LabOrderQueue : "Pending Orders"\cb1 \
+\cb5     LabOrderQueue --> LabResultEntry : "Enter results"\cb1 \
+\
+\cb5     PharmacistDashboard --> PharmacyInventory : "Check Stock"\cb1 \
+\cb5     PharmacyInventory --> DispenseMedication : "Dispense Medicine"\cb1 \
+\
+\cb5     BillingInvoices --> PaymentGatewayMock : "Process Transaction"\cb1 \
+\
+\cb5     UserBranchManagement --> AdministratorDashboard : Return\cb1 \
+\cb5     AuditLogViewer --> AdministratorDashboard : Return\cb1 \
+\cb5     PatientRegistration --> ReceptionistDashboard : Return\cb1 \
+\cb5     AppointmentBooking --> ReceptionistDashboard : Return\cb1 \
+\cb5     ClinicalNotesEntry --> DoctorDashboard : Return\cb1 \
+\cb5     LabResultEntry --> LabTechDashboard : Return\cb1 \
+\cb5     DispenseMedication --> PharmacistDashboard : Return\cb1 \
+\cb5     PaymentGatewayMock --> BillingInvoices : Return\cb1 \
+\
+\cb5     RoleDashboard --> LoginScreen : "Sign Out"\cb1 \
+}

@@ -1,0 +1,214 @@
+erDiagram
+    BRANCH {
+        int branch_id PK
+        string name
+        string state
+        string address
+        string contact
+        string status
+    }
+    ROLE {
+        int role_id PK
+        string name
+        string description
+    }
+    USER {
+        int user_id PK
+        int branch_id FK
+        string email
+        string username
+        string password_hash
+        string status
+        datetime last_login
+    }
+    USER_ROLE {
+        int user_id FK
+        int role_id FK
+        datetime effective_from
+        datetime effective_to
+    }
+    PATIENT {
+        int patient_id PK
+        int user_id FK
+        string global_number
+        string demographics
+        string contact
+    }
+    STAFF {
+        int staff_id PK
+        int user_id FK
+        int branch_id FK
+        string profession
+        string registration_no
+        string status
+    }
+    SCHEDULE {
+        int schedule_id PK
+        int staff_id FK
+        int branch_id FK
+        datetime start_time
+        datetime end_time
+        string type
+    }
+    APPOINTMENT {
+        int appointment_id PK
+        int patient_id FK
+        int doctor_staff_id FK
+        int branch_id FK
+        datetime start_time
+        datetime end_time
+        string status
+        string reason
+    }
+    MEDICAL_RECORD {
+        int record_id PK
+        int patient_id FK
+        int author_staff_id FK
+        string record_type
+        string content_ciphertext
+        datetime created_at
+        int version
+    }
+    ADMISSION {
+        int admission_id PK
+        int patient_id FK
+        int branch_id FK
+        int bed_id FK
+        datetime admitted_at
+        datetime discharged_at
+        string status
+    }
+    BED {
+        int bed_id PK
+        int branch_id FK
+        string ward
+        string room
+        string number
+        string status
+    }
+    LAB_ORDER {
+        int order_id PK
+        int patient_id FK
+        int requester_id FK
+        string test_type
+        string status
+        datetime requested_at
+    }
+    LAB_RESULT {
+        int result_id PK
+        int order_id FK
+        int technician_id FK
+        string result_ciphertext
+        string file_uri
+        datetime verified_at
+    }
+    MEDICINE {
+        int medicine_id PK
+        string name
+        string batch
+        date expiry
+        int threshold
+        int supplier_id
+    }
+    INVENTORY_TRANSACTION {
+        int transaction_id PK
+        int branch_id FK
+        int medicine_id FK
+        int qty
+        string type
+        int actor_id FK
+        datetime timestamp
+    }
+    PRESCRIPTION {
+        int prescription_id PK
+        int patient_id FK
+        int prescriber_id FK
+        datetime issued_at
+        string status
+    }
+    INVOICE {
+        int invoice_id PK
+        int patient_id FK
+        string visit_ref
+        decimal total
+        string status
+        datetime issued_at
+    }
+    PAYMENT {
+        int payment_id PK
+        int invoice_id FK
+        string gateway_reference
+        decimal amount
+        string status
+        datetime received_at
+    }
+    CONSENT {
+        int consent_id PK
+        int patient_id FK
+        string purpose
+        string notice_version
+        string state
+        datetime changed_at
+    }
+    NOTIFICATION {
+        int notification_id PK
+        string recipient
+        string channel
+        string template
+        string related_ref
+        string status
+        datetime sent_at
+    }
+    AUDIT_LOG {
+        int audit_id PK
+        string actor
+        string role
+        string action
+        string object_type_id
+        string outcome
+        datetime timestamp
+        string source
+    }
+    BACKUP_JOB {
+        int job_id PK
+        string type
+        datetime started_at
+        datetime ended_at
+        string status
+        string location_ref
+        string verification
+    }
+    FEEDBACK {
+        int feedback_id PK
+        int patient_id FK
+        string comment
+        string sentiment
+        int reviewed_by FK
+        datetime created_at
+    }
+
+    BRANCH ||--o{ USER : "hosts"
+    BRANCH ||--o{ STAFF : "employs"
+    BRANCH ||--o{ BED : "manages"
+    BRANCH ||--o{ APPOINTMENT : "schedules"
+    USER ||--o{ USER_ROLE : "assigned"
+    ROLE ||--o{ USER_ROLE : "defines"
+    USER ||--o| PATIENT : "links"
+    USER ||--o| STAFF : "identifies"
+    PATIENT ||--o{ APPOINTMENT : "books"
+    PATIENT ||--o{ MEDICAL_RECORD : "has"
+    PATIENT ||--o{ ADMISSION : "admitted"
+    PATIENT ||--o{ LAB_ORDER : "receives"
+    PATIENT ||--o{ PRESCRIPTION : "gets"
+    PATIENT ||--o{ INVOICE : "billed"
+    PATIENT ||--o{ CONSENT : "provides"
+    PATIENT ||--o{ FEEDBACK : "submits"
+    STAFF ||--o{ SCHEDULE : "allocated"
+    STAFF ||--o{ APPOINTMENT : "treats"
+    STAFF ||--o{ MEDICAL_RECORD : "records"
+    STAFF ||--o{ LAB_ORDER : "requests"
+    STAFF ||--o{ LAB_RESULT : "completes"
+    BED ||--o{ ADMISSION : "allocates"
+    LAB_ORDER ||--o{ LAB_RESULT : "results"
+    MEDICINE ||--o{ INVENTORY_TRANSACTION : "tracked"
+    INVOICE ||--o{ PAYMENT : "pays"

@@ -1,0 +1,73 @@
+sequenceDiagram
+    autonumber
+    actor Rec as Receptionist
+    actor Doc as Doctor
+    actor Tech as Lab Tech
+    actor Pharm as Pharmacist
+    participant Sys as Node.js HTTP Server
+    participant DB as SQLite Database
+
+    %% Stage 1: Auth
+    Note over Rec, Sys: 1. Authentication Stage
+    Rec->>Sys: POST /api/auth/login (username, password)
+    Sys->>DB: Query user credentials & verify hash
+    DB-->>Sys: Return user record (Role: Receptionist)
+    Sys-->>Rec: 200 OK (Set-Cookie: sgh_session, CSRF token)
+
+    %% Stage 2: Patient Registration
+    Note over Rec, Sys: 2. Patient Registration Stage
+    Rec->>Sys: POST /api/patients (demographics, contact) [With Session & CSRF]
+    Sys->>Sys: Validate fields (names, phone, email format)
+    Sys->>DB: INSERT INTO patients (global_number, demographics)
+    DB-->>Sys: Confirm insert (patient_id: 3, MRN: SGH-000003)
+    Sys->>DB: INSERT INTO audit_logs (PATIENT_CREATED)
+    Sys-->>Rec: 201 Created (MRN: SGH-000003)
+
+    %% Stage 3: Appointment Booking (Success & Conflict Check)
+    Note over Rec, Sys: 3. Appointment Booking & Conflict Prevention
+    Rec->>Sys: POST /api/appointments (patient_id: 3, doctor_id: 2, start: 14:00, end: 14:30)
+    Sys->>DB: Query appointments for Doctor 2 between 14:00 and 14:30
+    DB-->>Sys: Return 0 matching rows (No overlap)
+    Sys->>DB: INSERT INTO appointments
+    DB-->>Sys: Confirm insert (appointment_id: 45)
+    Sys-->>Rec: 201 Created (Appointment scheduled)
+
+    Rec->>Sys: POST /api/appointments (patient_id: 4, doctor_id: 2, start: 14:15, end: 14:45)
+    Sys->>DB: Query appointments for Doctor 2 between 14:15 and 14:45
+    DB-->>Sys: Return 1 matching row (appointment_id: 45 overlaps!)
+    Sys-->>Rec: 409 Conflict (Doctor is busy)
+
+    %% Stage 4: Clinical Consultation
+    Note over Doc, Sys: 4. Clinical Note & Lab Order Stage
+    Doc->>Sys: POST /api/clinical-notes (patient_id: 3, note: "Patient exhibits symptoms...")
+    Sys->>DB: INSERT INTO medical_records
+    DB-->>Sys: Confirm insert
+    Sys-->>Doc: 201 Created (Note appended)
+
+    Doc->>Sys: POST /api/lab-orders (patient_id: 3, test_type: "Blood Panel")
+    Sys->>DB: INSERT INTO lab_orders (status: PENDING)
+    DB-->>Sys: Confirm insert (order_id: 12)
+    Sys-->>Doc: 201 Created (Lab order placed)
+
+    %% Stage 5: Lab Execution
+    Note over Tech, Sys: 5. Lab Results Entry Stage
+    Tech->>Sys: PATCH /api/lab-orders/12 (result: "Normal", status: COMPLETED)
+    Sys->>DB: UPDATE lab_orders SET status = COMPLETED, INSERT INTO lab_results
+    DB-->>Sys: Confirm updates
+    Sys-->>Tech: 200 OK (Results recorded)
+
+    %% Stage 6: Pharmacy Dispensing
+    Note over Pharm, Sys: 6. Medication Dispense Stage
+    Pharm->>Sys: POST /api/medications/dispense (patient_id: 3, medicine_id: 5, qty: 2)
+    Sys->>DB: Query inventory balance for Medicine 5 (Batch A)
+    DB-->>Sys: Return stock: 10, expiry: 2028-12-31
+    Sys->>DB: UPDATE inventory (stock - 2) & INSERT INTO inventory_transactions
+    DB-->>Sys: Confirm update
+    Sys-->>Pharm: 200 OK (Dispensing recorded, stock updated)
+
+    %% Stage 7: Invoicing
+    Note over Rec, Sys: 7. Billing Stage
+    Rec->>Sys: PATCH /api/invoices/99 (status: PAID)
+    Sys->>DB: UPDATE invoices SET status = PAID, INSERT INTO payments
+    DB-->>Sys: Confirm update
+    Sys-->>Rec: 200 OK (Payment confirmed)

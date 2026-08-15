@@ -1,0 +1,85 @@
+graph TD
+    %% Styling
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef network fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef controller fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    classDef service fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef data fill:#ffebee,stroke:#c62828,stroke-width:2px;
+    classDef crosscut fill:#eceff1,stroke:#37474f,stroke-width:2px,stroke-dasharray: 5 5;
+
+    %% Client Layer
+    subgraph ClientLayer ["1. Presentation Layer (Installable PWA Client)"]
+        PWA["Installable PWA App Shell"]
+        PatientUI["Patient Interface"]
+        StaffUI["Hospital/Clinic Interface"]
+        AdminUI["Administration Interface"]
+        PWA --> PatientUI
+        PWA --> StaffUI
+        PWA --> AdminUI
+    end
+    class ClientLayer,PWA,PatientUI,StaffUI,AdminUI client;
+
+    %% Network Transport
+    subgraph NetLayer ["2. Transport Security Layer"]
+        HTTPS["Secure Transport (HTTPS / TLS 1.3)"]
+    end
+    class NetLayer,HTTPS network;
+
+    %% Controller & Service Layers
+    subgraph AppLayer ["3. Application & Service Layer (PHP/MVC Laravel)"]
+        subgraph Controllers ["Controllers (Request Gateways)"]
+            Router["Routing & Request Validation"]
+            RBAC["RBAC / Permission Middleware"]
+            Router --> RBAC
+        end
+
+        subgraph CoreServices ["Modular Domain Services"]
+            AuthSvc["Auth & Session Service"]
+            PatSvc["Patient Registry Service"]
+            AptSvc["Appointment Scheduler"]
+            ClinSvc["Clinical Notes Service"]
+            LabSvc["Laboratory Orchestrator"]
+            PharmSvc["Pharmacy & Inventory"]
+            BillSvc["Billing & Invoice Engine"]
+        end
+
+        subgraph Adapters ["Integration Adapters"]
+            SMSAdapter["SMS & Email Queue Adapter"]
+            PayAdapter["Payment Gateway Adapter"]
+            AIAdapter["Advisory AI Adapter"]
+        end
+    end
+    class AppLayer,Controllers,Router,RBAC controller;
+    class CoreServices,AuthSvc,PatSvc,AptSvc,ClinSvc,LabSvc,PharmSvc,BillSvc service;
+    class Adapters,SMSAdapter,PayAdapter,AIAdapter controller;
+
+    %% Data Layer
+    subgraph DataLayer ["4. Persistence & Storage Layer"]
+        MySQL[("MySQL Transactional Database<br>(Tables, FKs, Indexes)")]
+        PrivateStorage[("Private File Storage<br>(Outside Web Root)")]
+    end
+    class DataLayer,MySQL,PrivateStorage data;
+
+    %% Cross-Cutting Controls
+    subgraph CrossCut ["Cross-Cutting Services (System-Wide Security & Compliance)"]
+        AuditLog["Security Audit Logger<br>(Append-Only Trail)"]
+        Encrypt["Encryption Engine<br>(Scrypt/Salt Hashing, AES-256)"]
+        BackupSvc["Backup & Disaster Recovery Manager<br>(Encrypted Snapshots)"]
+        MonSvc["Monitoring, Intrusion Detection & Queue Alerting"]
+    end
+    class CrossCut,AuditLog,Encrypt,BackupSvc,MonSvc crosscut;
+
+    %% Flow Connections
+    ClientLayer -->|Encrypted Requests| HTTPS
+    HTTPS -->|Authorized Endpoints| Router
+    RBAC -->|Delegate Work| CoreServices
+    CoreServices -->|Third-Party Calls| Adapters
+    CoreServices -->|Read/Write Records| MySQL
+    LabSvc -->|Save Reports| PrivateStorage
+
+    %% Cross-cutting connections (Dashed lines to represent universal coverage)
+    AuditLog -.-> AppLayer
+    Encrypt -.-> DataLayer
+    Encrypt -.-> AppLayer
+    BackupSvc -.-> DataLayer
+    MonSvc -.-> AppLayer

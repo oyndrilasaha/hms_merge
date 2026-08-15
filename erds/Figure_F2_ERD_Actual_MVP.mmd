@@ -1,0 +1,196 @@
+erDiagram
+    BRANCHES {
+        int id PK
+        string code "UNIQUE"
+        string name
+        string address
+        string phone
+        int active
+        datetime created_at
+    }
+    USERS {
+        int id PK
+        string username "UNIQUE"
+        string full_name
+        string email "UNIQUE"
+        string password_hash
+        string password_salt
+        string role
+        int branch_id FK
+        int active
+        datetime created_at
+        datetime updated_at
+    }
+    PATIENTS {
+        int id PK
+        string medical_record_number "UNIQUE"
+        int user_id FK
+        int branch_id FK
+        string first_name
+        string last_name
+        string date_of_birth
+        string gender
+        string phone
+        string email
+        string address
+        string emergency_contact
+        string allergies
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+    APPOINTMENTS {
+        int id PK
+        int patient_id FK
+        int doctor_user_id FK
+        int branch_id FK
+        datetime starts_at
+        datetime ends_at
+        string status
+        string reason
+        string notes
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+    CLINICAL_NOTES {
+        int id PK
+        int patient_id FK
+        int appointment_id FK
+        int clinician_user_id FK
+        string note_type
+        string subjective
+        string objective
+        string assessment
+        string plan
+        datetime created_at
+    }
+    LAB_ORDERS {
+        int id PK
+        int patient_id FK
+        int appointment_id FK
+        int ordered_by FK
+        int branch_id FK
+        string test_name
+        string priority
+        string status
+        string clinical_information
+        string result
+        string result_units
+        string reference_range
+        int resulted_by FK
+        datetime ordered_at
+        datetime resulted_at
+        datetime updated_at
+    }
+    MEDICATIONS {
+        int id PK
+        string name
+        string strength
+        string form
+        string unit
+        int active
+    }
+    INVENTORY {
+        int id PK
+        int branch_id FK
+        int medication_id FK
+        string batch_number
+        string expiry_date
+        int quantity
+        int reorder_level
+        datetime updated_at
+    }
+    DISPENSINGS {
+        int id PK
+        int patient_id FK
+        int branch_id FK
+        int medication_id FK
+        int inventory_id FK
+        string prescription_reference
+        int quantity
+        int dispensed_by FK
+        string instructions
+        datetime dispensed_at
+    }
+    INVOICES {
+        int id PK
+        string invoice_number "UNIQUE"
+        int patient_id FK
+        int appointment_id FK
+        int branch_id FK
+        string description
+        int subtotal_cents
+        int gst_cents
+        int total_cents
+        int paid_cents
+        string due_date
+        string status
+        int issued_by FK
+        datetime issued_at
+        datetime updated_at
+    }
+    PAYMENTS {
+        int id PK
+        int invoice_id FK
+        int amount_cents
+        string method
+        string reference
+        int received_by FK
+        datetime paid_at
+    }
+    SESSIONS {
+        string token_hash PK
+        int user_id FK
+        string csrf_token
+        datetime expires_at
+        datetime created_at
+    }
+    AUDIT_LOGS {
+        int id PK
+        int actor_user_id FK
+        int branch_id FK
+        string action
+        string entity_type
+        string entity_id
+        string details_json
+        string ip_address
+        datetime created_at
+    }
+
+    BRANCHES ||--o{ USERS : "hosts"
+    BRANCHES ||--o{ PATIENTS : "registers"
+    BRANCHES ||--o{ APPOINTMENTS : "hosts"
+    BRANCHES ||--o{ LAB_ORDERS : "orders"
+    BRANCHES ||--o{ INVENTORY : "stores"
+    BRANCHES ||--o{ DISPENSINGS : "dispenses"
+    BRANCHES ||--o{ INVOICES : "issues"
+    BRANCHES ||--o{ AUDIT_LOGS : "logs"
+
+    USERS ||--o{ PATIENTS : "creates"
+    USERS ||--o| PATIENTS : "associates"
+    USERS ||--o{ APPOINTMENTS : "conducts"
+    USERS ||--o{ APPOINTMENTS : "creates"
+    USERS ||--o{ CLINICAL_NOTES : "writes"
+    USERS ||--o{ LAB_ORDERS : "orders"
+    USERS ||--o{ LAB_ORDERS : "results"
+    USERS ||--o{ DISPENSINGS : "dispenses"
+    USERS ||--o{ INVOICES : "issues"
+    USERS ||--o{ PAYMENTS : "receives"
+    USERS ||--o{ SESSIONS : "starts"
+    USERS ||--o{ AUDIT_LOGS : "performs"
+
+    PATIENTS ||--o{ APPOINTMENTS : "books"
+    PATIENTS ||--o{ CLINICAL_NOTES : "has"
+    PATIENTS ||--o{ LAB_ORDERS : "undergoes"
+    PATIENTS ||--o{ DISPENSINGS : "receives"
+    PATIENTS ||--o{ INVOICES : "billed"
+
+    APPOINTMENTS ||--o{ CLINICAL_NOTES : "contains"
+    APPOINTMENTS ||--o{ LAB_ORDERS : "includes"
+    APPOINTMENTS ||--o{ INVOICES : "triggers"
+
+    MEDICATIONS ||--o{ INVENTORY : "listed_in"
+    MEDICATIONS ||--o{ DISPENSINGS : "dispensed_as"
+    INVENTORY ||--o{ DISPENSINGS : "decremented"
+    INVOICES ||--o{ PAYMENTS : "settles"

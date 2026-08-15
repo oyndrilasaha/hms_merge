@@ -1,0 +1,71 @@
+graph TD
+    %% External Entities
+    subgraph External_Entities ["External Roles"]
+        Rec["Receptionist"]
+        Doc["Doctor"]
+        Tech["Lab Technician"]
+        Pharm["Pharmacist"]
+        Admin["Administrator"]
+    end
+
+    %% Processes
+    subgraph Processes ["Node.js API Services"]
+        P1["1.0 Auth & Session Management"]
+        P2["2.0 Patient Management"]
+        P3["3.0 Appointment Scheduling"]
+        P4["4.0 Clinical Records"]
+        P5["5.0 Laboratory Workflow"]
+        P6["6.0 Inventory & Dispensing"]
+        P7["7.0 Billing & Invoicing"]
+        P8["8.0 Audit Logger"]
+    end
+
+    %% Data Stores
+    subgraph DB ["SQLite Database Stores"]
+        D1[("Users / Sessions")]
+        D2[("Patient Profiles")]
+        D3[("Appointments")]
+        D4[("Clinical Notes")]
+        D5[("Lab Orders")]
+        D6[("Inventory")]
+        D7[("Invoices")]
+        D8[("Audit Logs")]
+    end
+
+    %% Flows
+    Rec -->|Login Request| P1
+    P1 -->|Query Credentials| D1
+    P1 -->|Create Session| D1
+    P1 -->|Write Audit| P8
+
+    Rec -->|Register Patient Details| P2
+    P2 -->|Save Profile| D2
+    P2 -->|Trigger Audit| P8
+
+    Rec -->|Book Appointment Request| P3
+    P3 -->|Check Conflict & Doctor Avail| D3
+    P3 -->|Save Appointment| D3
+    P3 -->|Trigger Audit| P8
+
+    Doc -->|Append Clinical Notes| P4
+    P4 -->|Save Clinical Record| D4
+    P4 -->|Trigger Audit| P8
+
+    Doc -->|Order Laboratory Test| P5
+    Tech -->|Update Results & Status| P5
+    P5 -->|Create/Update Order| D5
+    P5 -->|Trigger Audit| P8
+
+    Pharm -->|Dispense Request| P6
+    P6 -->|Check Stock & Decrement| D6
+    P6 -->|Record Dispensing| D6
+    P6 -->|Trigger Audit| P8
+
+    Rec -->|Generate Invoice / Mark Paid| P7
+    P7 -->|Read Lab/Med Details| D5
+    P7 -->|Write Invoice Data| D7
+    P7 -->|Trigger Audit| P8
+
+    Admin -->|View Log File| P8
+    P8 -->|Query Audit File| D8
+    P8 -->|Write Event| D8
