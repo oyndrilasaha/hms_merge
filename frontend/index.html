@@ -479,6 +479,24 @@
         <svg aria-hidden="true"><use href="#icon-shield"></use></svg>
         <span><strong>Training environment.</strong> Use synthetic patient data only. Never enter real health information.</span>
       </div>
+      <details class="login-credentials-hint" style="margin-top:16px;border:1px solid var(--line,#e5e7eb);border-radius:10px;padding:12px 16px;font-size:0.78rem;">
+        <summary style="cursor:pointer;font-weight:700;color:var(--teal-700,#0b5f66);list-style:none;display:flex;align-items:center;gap:6px;">
+          <svg aria-hidden="true" style="width:14px;height:14px;fill:currentColor;"><use href="#icon-users"></use></svg>
+          Demo login credentials
+        </summary>
+        <div style="margin-top:10px;display:grid;gap:6px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:8px;background:#f0fdfa;border-radius:6px;">
+            <span style="font-weight:700;color:#0b5f66;">👤 Patient Portal</span><span style="color:#555;">patient / DemoPass!2026</span>
+            <span style="font-weight:700;">🩺 Doctor</span><span style="color:#555;">doctor / DemoPass!2026</span>
+            <span style="font-weight:700;">🏥 Admin</span><span style="color:#555;">admin / DemoPass!2026</span>
+            <span style="font-weight:700;">📋 Receptionist</span><span style="color:#555;">reception / DemoPass!2026</span>
+            <span style="font-weight:700;">🔬 Lab Tech</span><span style="color:#555;">labtech / DemoPass!2026</span>
+            <span style="font-weight:700;">💊 Pharmacist</span><span style="color:#555;">pharmacist / DemoPass!2026</span>
+            <span style="font-weight:700;">👩‍⚕️ Nurse</span><span style="color:#555;">nurse / DemoPass!2026</span>
+            <span style="font-weight:700;">📊 Manager</span><span style="color:#555;">manager / DemoPass!2026</span>
+          </div>
+        </div>
+      </details>
     </section>
     <aside class="login-art" aria-hidden="true">
       <div class="art-copy">
@@ -525,6 +543,9 @@
         <p class="nav-label">Workspace</p>
         <button class="nav-item" type="button" data-page="dashboard" data-testid="nav-dashboard">
           <svg aria-hidden="true"><use href="#icon-grid"></use></svg><span>Dashboard</span>
+        </button>
+        <button class="nav-item" type="button" data-page="my-records" data-testid="nav-my-records">
+          <svg aria-hidden="true"><use href="#icon-clinical"></use></svg><span>My Health Records</span>
         </button>
         <button class="nav-item" type="button" data-page="patients" data-testid="nav-patients">
           <svg aria-hidden="true"><use href="#icon-users"></use></svg><span>Patients</span>

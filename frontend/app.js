@@ -61,6 +61,11 @@ const PAGE_META = Object.freeze({
     title: 'Feedback & Sentiment Analysis',
     description: 'Submit customer experience reviews and inspect service quality indices.'
   },
+  'my-records': {
+    eyebrow: 'Patient Portal',
+    title: 'My Health Records',
+    description: 'View, download and print your personal medical records, test results and treatment history.'
+  },
   audit: {
     eyebrow: 'Governance',
     title: 'Audit trail',
@@ -76,7 +81,7 @@ const ROLE_PAGES = Object.freeze({
   nurse: ['dashboard', 'patients', 'appointments', 'clinical', 'pharmacy'],
   lab_technician: ['dashboard', 'patients', 'clinical'],
   pharmacist: ['dashboard', 'patients', 'pharmacy'],
-  patient: ['dashboard', 'appointments', 'billing', 'feedback']
+  patient: ['dashboard', 'my-records', 'appointments', 'billing', 'feedback']
 });
 
 const FORM_PERMISSIONS = Object.freeze({
@@ -108,6 +113,7 @@ const state = {
   medications: [],
   invoices: [],
   auditLogs: [],
+  myRecords: { notes: [], labOrders: [], invoices: [] },
   dashboard: {},
   installPrompt: null,
   currentForm: null,
@@ -164,6 +170,7 @@ function bindGlobalEvents() {
   elements.bottomNav?.addEventListener('click', handleNavigation);
   elements.pageActions.addEventListener('click', handleActionClick);
   elements.pageContent.addEventListener('click', handleActionClick);
+  elements.pageContent.addEventListener('click', handlePatientPortalClick);
   elements.pageContent.addEventListener('submit', handleFeedbackSubmit);
   elements.pageContent.addEventListener('input', handleTableFilter);
   elements.pageContent.addEventListener('change', handleTableFilter);
@@ -517,6 +524,17 @@ async function loadPage(page) {
       state.medications = collectionFrom(await apiRequest(`${API_ENDPOINTS.medications}${branchQuery}`), ['medications', 'inventory']);
     } else if (page === 'billing') {
       state.invoices = collectionFrom(await apiRequest(`${API_ENDPOINTS.invoices}${branchQuery}`), ['invoices']);
+    } else if (page === 'my-records') {
+      const [notes, labs, bills] = await Promise.all([
+        apiRequest(API_ENDPOINTS.clinicalNotes),
+        apiRequest(API_ENDPOINTS.labOrders),
+        apiRequest(API_ENDPOINTS.invoices)
+      ]);
+      state.myRecords = {
+        notes: collectionFrom(notes, ['clinicalNotes', 'clinical_notes', 'notes']),
+        labOrders: collectionFrom(labs, ['labOrders', 'lab_orders', 'orders']),
+        invoices: collectionFrom(bills, ['invoices'])
+      };
     } else if (page === 'feedback') {
       state.feedbacks = ['admin', 'branch_manager'].includes(state.role) 
         ? collectionFrom(await apiRequest(API_ENDPOINTS.feedbacks), ['feedbacks', 'items'])
@@ -544,6 +562,7 @@ function renderCurrentPage() {
     pharmacy: renderPharmacy,
     billing: renderBilling,
     feedback: renderFeedback,
+    'my-records': renderMyRecords,
     audit: renderAudit
   };
   elements.pageContent.innerHTML = renderers[state.activePage]();
@@ -747,6 +766,176 @@ function invoicesTable(invoices) {
   }).join('');
   return `<table class="data-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Patient</th><th scope="col">Amount</th><th scope="col">Issued</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
+
+function renderMyRecords() {
+  const { notes, labOrders, invoices } = state.myRecords || { notes: [], labOrders: [], invoices: [] };
+  const user = state.user || {};
+  const fullName = user.fullName || user.full_name || user.name || 'Patient';
+  const email = user.email || '';
+
+  function sectionHeader(title, subtitle, printFn, dlFn) {
+    return `
+      <header class="panel-header" style="padding-bottom:12px;margin-bottom:0;">
+        <div><h2 style="font-size:1rem;">${escapeHtml(title)}</h2><p style="font-size:0.75rem;">${escapeHtml(subtitle)}</p></div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="button button--quiet button--small" type="button" data-portal-fn="${printFn}">
+            <svg aria-hidden="true" style="width:13px;height:13px;fill:currentColor;margin-right:4px;"><use href="#icon-clinical"></use></svg>Print
+          </button>
+          <button class="button button--secondary button--small" type="button" data-portal-fn="${dlFn}">
+            <svg aria-hidden="true" style="width:13px;height:13px;fill:currentColor;margin-right:4px;"><use href="#icon-download"></use></svg>Download
+          </button>
+        </div>
+      </header>`;
+  }
+
+  const noteRows = notes.length ? notes.map(n => {
+    const type = pick(n,'noteType','note_type') || 'Note';
+    const clinician = pick(n,'clinicianName','clinician_name') || personName(n.clinician) || 'Clinician';
+    const content = pick(n,'content','body','text') || '';
+    const date = pick(n,'createdAt','created_at','recordedAt');
+    return `<tr><td><span class="cell-primary"><strong>${escapeHtml(titleCase(type))}</strong><small>${escapeHtml(formatDate(date))}</small></span></td><td>${escapeHtml(clinician)}</td><td style="white-space:normal;max-width:340px;line-height:1.5;">${escapeHtml(content)}</td></tr>`;
+  }).join('') : `<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--ink-soft);">No clinical notes recorded yet.</td></tr>`;
+
+  const labRows = labOrders.length ? labOrders.map(l => {
+    const test = pick(l,'testName','test_name') || 'Lab Test';
+    const status = pick(l,'status') || 'Pending';
+    const result = pick(l,'resultSummary','result_summary','result') || '—';
+    const date = pick(l,'createdAt','created_at','orderedAt');
+    const badge = status === 'Completed' ? 'status-badge--success' : (status === 'Cancelled' ? 'status-badge--danger' : 'status-badge--active');
+    return `<tr><td><strong>${escapeHtml(test)}</strong></td><td><span class="status-badge ${badge}">${escapeHtml(status)}</span></td><td style="max-width:280px;white-space:normal;">${escapeHtml(result)}</td><td>${escapeHtml(formatDate(date))}</td></tr>`;
+  }).join('') : `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-soft);">No lab orders found.</td></tr>`;
+
+  const invoiceRows = invoices.length ? invoices.map(inv => {
+    const num = String(pick(inv,'invoiceNumber','invoice_number') || inv.id);
+    const desc = pick(inv,'description') || 'Medical service';
+    const total = pick(inv,'totalCents','total_cents','total') || 0;
+    const status = pick(inv,'status') || 'Issued';
+    const date = pick(inv,'issuedAt','issued_at','createdAt');
+    const badge = status === 'Paid' ? 'status-badge--success' : (status === 'Overdue' ? 'status-badge--danger' : 'status-badge--active');
+    return `<tr>
+      <td><strong>${escapeHtml(num)}</strong><br><small>${escapeHtml(desc)}</small></td>
+      <td><strong>${formatCurrency(total)}</strong></td>
+      <td><span class="status-badge ${badge}">${escapeHtml(status)}</span></td>
+      <td>${escapeHtml(formatDate(date))}</td>
+      <td><button class="button button--quiet button--small" type="button" data-print-cert="${escapeAttribute(num)}">🖨&nbsp;Certificate</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--ink-soft);">No invoices found.</td></tr>`;
+
+  return `
+    <div class="metric-grid" style="margin-bottom:20px;">
+      <article class="metric-card" style="grid-column:1/-1;flex-direction:row;align-items:center;gap:18px;padding:20px 24px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--teal-700),var(--teal-500));display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;color:#fff;flex-shrink:0;">${escapeHtml(fullName.slice(0,2).toUpperCase())}</div>
+        <div style="flex:1;min-width:0;"><strong style="font-size:1.05rem;display:block;">${escapeHtml(fullName)}</strong><span style="font-size:0.78rem;color:var(--ink-soft);">${escapeHtml(email)}</span></div>
+        <div style="display:flex;gap:10px;flex-shrink:0;">
+          <button class="button button--secondary" type="button" data-portal-fn="printSectionById:rec-clinical-notes">
+            <svg aria-hidden="true" style="width:14px;height:14px;fill:currentColor;"><use href="#icon-clinical"></use></svg> Print Full Summary
+          </button>
+          <button class="button button--primary" type="button" data-portal-fn="downloadFullSummary">
+            <svg aria-hidden="true" style="width:14px;height:14px;fill:currentColor;"><use href="#icon-download"></use></svg> Download Records
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <section class="panel rise" style="margin-bottom:16px;">
+      ${sectionHeader('Clinical Notes','Consultation notes from your treating clinicians.','printSectionById:rec-clinical-notes','downloadCSVById:rec-clinical-notes:my_clinical_notes')}
+      <div class="table-scroll" id="rec-clinical-notes">
+        <table class="data-table"><thead><tr><th scope="col">Type</th><th scope="col">Clinician</th><th scope="col">Notes</th></tr></thead>
+        <tbody>${noteRows}</tbody></table>
+      </div>
+    </section>
+
+    <section class="panel rise" style="margin-bottom:16px;">
+      ${sectionHeader('Diagnostic Test Results','Laboratory orders requested during your care.','printSectionById:rec-lab-results','downloadCSVById:rec-lab-results:my_lab_results')}
+      <div class="table-scroll" id="rec-lab-results">
+        <table class="data-table"><thead><tr><th scope="col">Test</th><th scope="col">Status</th><th scope="col">Result</th><th scope="col">Date</th></tr></thead>
+        <tbody>${labRows}</tbody></table>
+      </div>
+    </section>
+
+    <section class="panel rise" style="margin-bottom:16px;">
+      ${sectionHeader('Billing & Payment Records','Invoices and official payment certificates.','printSectionById:rec-billing','downloadCSVById:rec-billing:my_billing')}
+      <div class="table-scroll" id="rec-billing">
+        <table class="data-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Date</th><th scope="col">Certificate</th></tr></thead>
+        <tbody>${invoiceRows}</tbody></table>
+      </div>
+    </section>
+  `;
+}
+
+function handlePatientPortalClick(event) {
+  const btn = event.target.closest('[data-portal-fn]');
+  const cert = event.target.closest('[data-print-cert]');
+
+  if (btn) {
+    const fn = btn.dataset.portalFn;
+    if (fn === 'downloadFullSummary') {
+      patientPortal.downloadFullSummary();
+    } else if (fn.startsWith('printSectionById:')) {
+      patientPortal.printSection(fn.split(':')[1]);
+    } else if (fn.startsWith('downloadCSVById:')) {
+      const [, tableId, filename] = fn.split(':');
+      patientPortal.downloadCSV(tableId, filename);
+    }
+  }
+  if (cert) {
+    patientPortal.printCertificate(cert.dataset.printCert);
+  }
+}
+
+const patientPortal = {
+  printSection(sectionId) {
+    const el = document.getElementById(sectionId);
+    if (!el) return;
+    const user = state.user || {};
+    const name = user.fullName || user.full_name || user.name || 'Patient';
+    const win = window.open('', '_blank', 'width=820,height=620');
+    win.document.write(`<!DOCTYPE html><html><head><title>St George HMS – Medical Record</title><style>body{font-family:Arial,sans-serif;font-size:13px;margin:36px;color:#1a1a1a}h1{font-size:18px;margin-bottom:4px;color:#0b5f66}.meta{color:#555;font-size:11px;margin-bottom:20px}table{width:100%;border-collapse:collapse}th{background:#0b5f66;color:#fff;padding:7px 10px;text-align:left;font-size:11px}td{border-bottom:1px solid #e0e0e0;padding:7px 10px;vertical-align:top}.footer{margin-top:28px;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:8px}</style></head><body><h1>St George Hospital Management System</h1><div class="meta">Patient: <strong>${name}</strong> &nbsp;|&nbsp; Printed: ${new Date().toLocaleString('en-AU')}</div>${el.innerHTML}<div class="footer">Personal use only. © St George Hospital NSW. Training environment — synthetic data.</div></body></html>`);
+    win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
+  },
+
+  downloadCSV(tableId, filename) {
+    const table = document.querySelector('#' + tableId + ' table');
+    if (!table) return;
+    const csv = Array.from(table.querySelectorAll('tr')).map(r =>
+      Array.from(r.querySelectorAll('th,td')).map(c => '"' + c.innerText.replace(/"/g, '""').replace(/\n/g, ' ') + '"').join(',')
+    ).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = filename + '_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click(); URL.revokeObjectURL(a.href);
+  },
+
+  downloadFullSummary() {
+    const user = state.user || {};
+    const name = user.fullName || user.full_name || user.name || 'Patient';
+    const { notes, labOrders, invoices } = state.myRecords || {};
+    let csv = 'St George Hospital – Full Medical Summary\nPatient: ' + name + '\nExported: ' + new Date().toLocaleString('en-AU') + '\n\nCLINICAL NOTES\n"Type","Clinician","Notes","Date"\n';
+    (notes || []).forEach(n => { csv += '"' + (pick(n,'noteType','note_type')||'') + '","' + (pick(n,'clinicianName','clinician_name')||'') + '","' + (pick(n,'content','body','text')||'').replace(/"/g,'""') + '","' + formatDate(pick(n,'createdAt','created_at')) + '"\n'; });
+    csv += '\nLAB RESULTS\n"Test","Status","Result","Date"\n';
+    (labOrders || []).forEach(l => { csv += '"' + (pick(l,'testName','test_name')||'') + '","' + (pick(l,'status')||'') + '","' + (pick(l,'resultSummary','result_summary','result')||'').replace(/"/g,'""') + '","' + formatDate(pick(l,'createdAt','created_at')) + '"\n'; });
+    csv += '\nBILLING\n"Invoice","Description","Amount","Status","Date"\n';
+    (invoices || []).forEach(i => { csv += '"' + (pick(i,'invoiceNumber','invoice_number')||'') + '","' + (pick(i,'description')||'') + '","' + formatCurrency(pick(i,'totalCents','total_cents','total')||0) + '","' + (pick(i,'status')||'') + '","' + formatDate(pick(i,'issuedAt','issued_at','createdAt')) + '"\n'; });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = 'medical_summary_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click(); URL.revokeObjectURL(a.href);
+  },
+
+  printCertificate(invoiceNum) {
+    const { invoices } = state.myRecords || {};
+    const inv = (invoices || []).find(i => String(pick(i,'invoiceNumber','invoice_number') || i.id) === String(invoiceNum));
+    const user = state.user || {};
+    const name = user.fullName || user.full_name || user.name || 'Patient';
+    const amount = inv ? formatCurrency(pick(inv,'totalCents','total_cents','total') || 0) : '—';
+    const status = inv ? (pick(inv,'status') || '—') : '—';
+    const desc = inv ? (pick(inv,'description') || '—') : '—';
+    const date = inv ? formatDate(pick(inv,'issuedAt','issued_at','createdAt')) : '—';
+    const win = window.open('', '_blank', 'width=680,height=520');
+    win.document.write(`<!DOCTYPE html><html><head><title>Payment Certificate – ${invoiceNum}</title><style>body{font-family:Arial,sans-serif;margin:48px;color:#1a1a1a}.hdr{border-bottom:3px solid #0b5f66;padding-bottom:14px;margin-bottom:24px}.hdr h1{font-size:20px;color:#0b5f66;margin:0 0 4px}.hdr p{margin:0;font-size:12px;color:#555}.cert{border:1px solid #cde4e1;border-radius:8px;padding:24px;background:#f0fdfa}.cert h2{font-size:15px;margin:0 0 14px;color:#0b5f66}.row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px dashed #ddd}.row:last-child{border-bottom:none}.lbl{color:#555}.val{font-weight:700}.ftr{margin-top:28px;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:8px}.stamp{margin-top:20px;text-align:right;font-size:11px;color:#0b5f66;font-weight:bold}</style></head><body><div class="hdr"><h1>St George Hospital Management System</h1><p>Official Payment &amp; Service Certificate | NSW Health Training Environment</p></div><div class="cert"><h2>PAYMENT CERTIFICATE</h2><div class="row"><span class="lbl">Patient Name</span><span class="val">${name}</span></div><div class="row"><span class="lbl">Invoice Number</span><span class="val">${invoiceNum}</span></div><div class="row"><span class="lbl">Service Description</span><span class="val">${desc}</span></div><div class="row"><span class="lbl">Amount</span><span class="val">${amount}</span></div><div class="row"><span class="lbl">Payment Status</span><span class="val">${status}</span></div><div class="row"><span class="lbl">Invoice Date</span><span class="val">${date}</span></div><div class="row"><span class="lbl">Issued By</span><span class="val">St George Hospital, Kogarah NSW</span></div></div><div class="stamp">✓ Verified — St George Hospital Accounts Department</div><div class="ftr">For personal records only. © St George Hospital NSW. Training data only.</div></body></html>`);
+    win.document.close(); win.focus(); setTimeout(() => win.print(), 300);
+  }
+};
 
 function renderFeedback() {
   if (state.role === 'patient') {
