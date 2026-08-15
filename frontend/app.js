@@ -21,7 +21,8 @@ const API_ENDPOINTS = Object.freeze({
   dispenseMedication: '/api/medications/dispense',
   invoices: '/api/invoices',
   invoice: (id) => `/api/invoices/${encodeURIComponent(id)}`,
-  auditLogs: '/api/audit-logs'
+  auditLogs: '/api/audit-logs',
+  feedbacks: '/api/feedbacks'
 });
 
 const PAGE_META = Object.freeze({
@@ -55,6 +56,11 @@ const PAGE_META = Object.freeze({
     title: 'Billing',
     description: 'Create patient invoices and monitor payment status.'
   },
+  feedback: {
+    eyebrow: 'Patient Relations',
+    title: 'Feedback & Sentiment Analysis',
+    description: 'Submit customer experience reviews and inspect service quality indices.'
+  },
   audit: {
     eyebrow: 'Governance',
     title: 'Audit trail',
@@ -63,14 +69,14 @@ const PAGE_META = Object.freeze({
 });
 
 const ROLE_PAGES = Object.freeze({
-  admin: ['dashboard', 'patients', 'appointments', 'clinical', 'pharmacy', 'billing', 'audit'],
-  branch_manager: ['dashboard', 'patients', 'appointments', 'billing', 'audit'],
+  admin: ['dashboard', 'patients', 'appointments', 'clinical', 'pharmacy', 'billing', 'feedback', 'audit'],
+  branch_manager: ['dashboard', 'patients', 'appointments', 'billing', 'feedback', 'audit'],
   receptionist: ['dashboard', 'patients', 'appointments', 'billing'],
   doctor: ['dashboard', 'patients', 'appointments', 'clinical'],
   nurse: ['dashboard', 'patients', 'appointments', 'clinical', 'pharmacy'],
   lab_technician: ['dashboard', 'patients', 'clinical'],
   pharmacist: ['dashboard', 'patients', 'pharmacy'],
-  patient: ['dashboard', 'appointments', 'billing']
+  patient: ['dashboard', 'appointments', 'billing', 'feedback']
 });
 
 const FORM_PERMISSIONS = Object.freeze({
@@ -158,6 +164,7 @@ function bindGlobalEvents() {
   elements.bottomNav?.addEventListener('click', handleNavigation);
   elements.pageActions.addEventListener('click', handleActionClick);
   elements.pageContent.addEventListener('click', handleActionClick);
+  elements.pageContent.addEventListener('submit', handleFeedbackSubmit);
   elements.pageContent.addEventListener('input', handleTableFilter);
   elements.pageContent.addEventListener('change', handleTableFilter);
   elements.branchSelect.addEventListener('change', handleBranchChange);
@@ -510,6 +517,10 @@ async function loadPage(page) {
       state.medications = collectionFrom(await apiRequest(`${API_ENDPOINTS.medications}${branchQuery}`), ['medications', 'inventory']);
     } else if (page === 'billing') {
       state.invoices = collectionFrom(await apiRequest(`${API_ENDPOINTS.invoices}${branchQuery}`), ['invoices']);
+    } else if (page === 'feedback') {
+      state.feedbacks = ['admin', 'branch_manager'].includes(state.role) 
+        ? collectionFrom(await apiRequest(API_ENDPOINTS.feedbacks), ['feedbacks', 'items'])
+        : [];
     } else if (page === 'audit') {
       state.auditLogs = collectionFrom(await apiRequest(`${API_ENDPOINTS.auditLogs}${branchQuery}`), ['auditLogs', 'audit_logs', 'logs']);
     }
@@ -532,6 +543,7 @@ function renderCurrentPage() {
     clinical: renderClinical,
     pharmacy: renderPharmacy,
     billing: renderBilling,
+    feedback: renderFeedback,
     audit: renderAudit
   };
   elements.pageContent.innerHTML = renderers[state.activePage]();
@@ -734,6 +746,199 @@ function invoicesTable(invoices) {
     return `<tr data-filter-row data-status="${escapeAttribute(status)}" data-search="${escapeAttribute(`${number} ${patient} ${description}`.toLowerCase())}"><td><span class="cell-primary"><strong>${escapeHtml(String(number))}</strong><small>${escapeHtml(description)}</small></span></td><td>${escapeHtml(patient)}</td><td><strong>${formatCurrency(displayAmount)}</strong></td><td>${escapeHtml(formatDate(issuedAt))}</td><td><span class="status-badge status-badge--${escapeAttribute(kebab(status))}">${escapeHtml(titleCase(status))}</span></td>${actionsCell}</tr>`;
   }).join('');
   return `<table class="data-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Patient</th><th scope="col">Amount</th><th scope="col">Issued</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderFeedback() {
+  if (state.role === 'patient') {
+    return `
+      <div class="split-grid rise" style="grid-template-columns: 1fr;">
+        <section class="panel">
+          <header class="panel-header">
+            <div>
+              <h2>Patient Experience Feedback</h2>
+              <p>Share your thoughts about your visit to help us improve St George care services.</p>
+            </div>
+          </header>
+          <div class="panel-body">
+            <form id="feedback-form" style="display: grid; gap: 16px;">
+              <div class="form-field form-field--wide">
+                <label for="feedback-comments" style="font-weight: 700; font-size: 0.82rem;">Your comments <span class="required-mark">*</span></label>
+                <textarea id="feedback-comments" name="comments" rows="6" required placeholder="Describe your experience with our clinics, doctors, pharmacists, or scheduling..." style="width:100%; border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-family: inherit; font-size: 0.85rem; resize: vertical; outline: none;"></textarea>
+                <p class="field-hint">Your feedback will be processed dynamically for sentiment scoring to monitor service standards.</p>
+              </div>
+              <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px;">
+                <button class="button button--primary" type="submit" id="feedback-submit">
+                  Submit feedback
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  const feedbacks = state.feedbacks || [];
+  const positive = feedbacks.filter(f => f.sentiment === 'Positive').length;
+  const negative = feedbacks.filter(f => f.sentiment === 'Negative').length;
+  const neutral = feedbacks.filter(f => f.sentiment === 'Neutral').length;
+  const total = feedbacks.length;
+  
+  const positivePct = total ? Math.round((positive / total) * 100) : 0;
+  const negativePct = total ? Math.round((negative / total) * 100) : 0;
+  const neutralPct = total ? Math.round((neutral / total) * 100) : 0;
+
+  let insights = 'No feedbacks collected yet to compile insights.';
+  if (total > 0) {
+    const dominant = positive >= Math.max(negative, neutral) 
+      ? 'Positive' 
+      : (negative >= Math.max(positive, neutral) ? 'Negative' : 'Neutral');
+    
+    let advice = '';
+    if (dominant === 'Positive') {
+      advice = 'Patient satisfaction is currently high. Continue reinforcing staff recognition and clinical care standards.';
+    } else if (dominant === 'Negative') {
+      advice = 'Service quality alerts triggered. Investigate clinic wait times and staff response coordinates.';
+    } else {
+      advice = 'Patient sentiment is neutral. Monitor clinical flow patterns to boost experience parameters.';
+    }
+
+    insights = `<strong>AI-Generated Summary:</strong> Patient experience metrics compile a total of <strong>${total}</strong> reviews. Sentiment distribution indexes at <strong>${positivePct}% Positive</strong>, <strong>${neutralPct}% Neutral</strong>, and <strong>${negativePct}% Negative</strong>. The dominant patient sentiment is <strong>${dominant}</strong>. <br/><span style="display:block; margin-top:8px; color:var(--teal-800); font-weight: 600;">${advice}</span>`;
+  }
+
+  const rows = feedbacks.map(f => {
+    const date = f.createdAt || f.created_at;
+    const name = f.firstName ? `${f.firstName} ${f.lastName}` : 'Anonymous Patient';
+    const mrn = f.medicalRecordNumber || '—';
+    const comments = f.comments;
+    const sentiment = f.sentiment;
+
+    let badgeClass = 'status-badge--active';
+    if (sentiment === 'Positive') badgeClass = 'status-badge--success';
+    else if (sentiment === 'Negative') badgeClass = 'status-badge--danger';
+
+    return `
+      <tr>
+        <td>
+          <span class="cell-primary">
+            <strong>${escapeHtml(name)}</strong>
+            <small>MRN: ${escapeHtml(mrn)}</small>
+          </span>
+        </td>
+        <td style="white-space: normal; line-height: 1.4; max-width: 400px;">${escapeHtml(comments)}</td>
+        <td><span class="status-badge ${badgeClass}">${escapeHtml(sentiment)}</span></td>
+        <td>${escapeHtml(formatDate(date))}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="split-grid rise">
+      <section class="panel" style="grid-column: 1 / -1; background: #f0fdfa; border-color: #cde4e1;">
+        <header class="panel-header" style="border-bottom-color: #cde4e1;">
+          <div>
+            <h2 style="color: var(--teal-950); display: flex; align-items: center; gap: 8px;">
+              <svg aria-hidden="true" style="width:16px; height:16px; fill:var(--teal-700);"><use href="#icon-comments"></use></svg>
+              AI-Generated Report Insights
+            </h2>
+            <p style="color: var(--teal-800);">Automated natural language summaries of monthly experience reports.</p>
+          </div>
+        </header>
+        <div class="panel-body" style="font-size: 0.85rem; color: #1e3a37; line-height: 1.5;">
+          ${insights}
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-header">
+          <div>
+            <h2>Service Quality Sentiment Breakdown</h2>
+            <p>Sentiment distribution index derived from patient comments.</p>
+          </div>
+        </header>
+        <div class="panel-body" style="display: grid; gap: 14px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px;">
+              <span>Positive (${positive} reviews)</span>
+              <span style="color: #15803d;">${positivePct}%</span>
+            </div>
+            <div style="background: #e2e8f0; height: 10px; border-radius: 99px; overflow: hidden;">
+              <div style="background: #15803d; width: ${positivePct}%; height: 100%;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px;">
+              <span>Neutral (${neutral} reviews)</span>
+              <span style="color: #64748b;">${neutralPct}%</span>
+            </div>
+            <div style="background: #e2e8f0; height: 10px; border-radius: 99px; overflow: hidden;">
+              <div style="background: #64748b; width: ${neutralPct}%; height: 100%;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px;">
+              <span>Negative (${negative} reviews)</span>
+              <span style="color: #b91c1c;">${negativePct}%</span>
+            </div>
+            <div style="background: #e2e8f0; height: 10px; border-radius: 99px; overflow: hidden;">
+              <div style="background: #b91c1c; width: ${negativePct}%; height: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-header">
+          <div>
+            <h2>Active Patient Feedback Log</h2>
+            <p>Direct service comments from patient portals.</p>
+          </div>
+        </header>
+        <div class="panel-body" style="padding:0;">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Comments</th>
+                  <th scope="col">Sentiment</th>
+                  <th scope="col">Submitted</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${feedbacks.length ? rows : `<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--ink-soft);">No patient experience records collected yet.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+async function handleFeedbackSubmit(event) {
+  if (event.target.id !== 'feedback-form') return;
+  event.preventDefault();
+
+  const submitButton = document.getElementById('feedback-submit');
+  const commentsArea = document.getElementById('feedback-comments');
+  if (!commentsArea || !submitButton) return;
+
+  setButtonBusy(submitButton, true);
+  try {
+    const response = await apiRequest(API_ENDPOINTS.feedbacks, {
+      method: 'POST',
+      body: JSON.stringify({ comments: commentsArea.value })
+    });
+    
+    const result = unwrapData(response) || {};
+    showToast(`Feedback submitted successfully! Sentiment analyzed as: ${result.sentiment}`, 'success');
+    commentsArea.value = '';
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    setButtonBusy(submitButton, false);
+  }
 }
 
 function renderAudit() {

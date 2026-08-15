@@ -194,6 +194,19 @@ function seedDatabase(db) {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(1, 1, 5000, 'Card', 'DEMO-PAYMENT-001', 4, '2026-08-04T02:10:00.000Z');
 
+    db.prepare(`
+      INSERT INTO feedbacks (patient_id, comments, sentiment, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(1, 'Excellent treatment from Dr Daniel Chen. The staff was highly professional.', 'Positive', '2026-08-05T03:00:00.000Z');
+    db.prepare(`
+      INSERT INTO feedbacks (patient_id, comments, sentiment, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(2, 'Long waiting time at the pharmacy. The queue was frustrating.', 'Negative', '2026-08-06T04:00:00.000Z');
+    db.prepare(`
+      INSERT INTO feedbacks (patient_id, comments, sentiment, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(1, 'Regular checkup was average, clinic was clean.', 'Neutral', '2026-08-07T05:00:00.000Z');
+
     audit(db, {
       actorUserId: 1,
       branchId: 1,

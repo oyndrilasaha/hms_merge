@@ -578,6 +578,48 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     }
   }
 
+  function getFeedbacks(req, res, url, session) {
+    requireRole(req, session, ['Admin', 'Branch Manager']);
+    const rows = db.prepare(`
+      SELECT f.*, p.first_name, p.last_name, p.medical_record_number
+      FROM feedbacks f
+      LEFT JOIN patients p ON p.id = f.patient_id
+      ORDER BY f.created_at DESC
+    `).all();
+    sendData(res, { items: camelize(rows) });
+  }
+
+  async function createFeedback(req, res, session) {
+    requireRole(req, session, ['Patient']);
+    const body = await readJson(req);
+    const comments = stringField(body, 'comments', { required: true, min: 3, max: 2000, label: 'Comments' });
+
+    const positiveWords = /\b(great|excellent|good|best|happy|friendly|clean|helpful|cured|satisfied|professional|perfect)\b/i;
+    const negativeWords = /\b(bad|slow|worst|poor|rude|dirty|pain|careless|unprofessional|frustrated|angry|unhappy|expensive)\b/i;
+    
+    const posCount = (comments.match(new RegExp(positiveWords, 'gi')) || []).length;
+    const negCount = (comments.match(new RegExp(negativeWords, 'gi')) || []).length;
+    
+    let sentiment = 'Neutral';
+    if (posCount > negCount) sentiment = 'Positive';
+    else if (negCount > posCount) sentiment = 'Negative';
+
+    db.prepare(`
+      INSERT INTO feedbacks (patient_id, comments, sentiment)
+      VALUES (?, ?, ?)
+    `).run(session.patientId || session.patient_id || null, comments, sentiment);
+
+    audit(db, {
+      actorUserId: session.userId,
+      branchId: session.branch_id || null,
+      action: 'FEEDBACK_SUBMITTED',
+      entityType: 'feedback',
+      details: { sentiment }
+    });
+
+    sendData(res, { success: true, sentiment }, 201);
+  }
+
   async function createClinicalNote(req, res, session) {
     requireRole(req, session, ['Admin', 'Doctor', 'Nurse']);
     const body = await readJson(req);
@@ -1331,6 +1373,14 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     }
     if (req.method === 'POST' && url.pathname === '/api/clinical/stego/decrypt') {
       await decryptStego(req, res, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/feedbacks') {
+      getFeedbacks(req, res, url, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/feedbacks') {
+      await createFeedback(req, res, session);
       return true;
     }
 

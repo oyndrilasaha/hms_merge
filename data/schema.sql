@@ -187,6 +187,14 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  patient_id INTEGER REFERENCES patients(id),
+  comments TEXT NOT NULL,
+  sentiment TEXT NOT NULL CHECK (sentiment IN ('Positive', 'Negative', 'Neutral')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_users_branch_role ON users(branch_id, role);
 CREATE INDEX IF NOT EXISTS idx_patients_branch_name ON patients(branch_id, last_name, first_name);
 CREATE INDEX IF NOT EXISTS idx_appointments_doctor_time ON appointments(doctor_user_id, starts_at, ends_at);
