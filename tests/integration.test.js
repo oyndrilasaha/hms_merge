@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
-const { DEMO_PASSWORD } = require('../src/database');
-const { verifyPassword } = require('../src/auth');
+const { DEMO_PASSWORD } = require('../backend/database');
+const { verifyPassword } = require('../backend/auth');
 const { assertApiError, startTestServer } = require('./helpers');
 
 const PATIENT_INPUT = {
@@ -77,7 +77,7 @@ test('T-AUTH-02: seeded passwords are salted slow hashes and verify safely', asy
   }
   assert.equal(verifyPassword(DEMO_PASSWORD, 'bad-salt', 'malformed-hash'), false);
 
-  const authSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'auth.js'), 'utf8');
+  const authSource = fs.readFileSync(path.join(__dirname, '..', 'backend', 'auth.js'), 'utf8');
   assert.match(authSource, /scryptSync/);
   assert.match(authSource, /timingSafeEqual/);
 });

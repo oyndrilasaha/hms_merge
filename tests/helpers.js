@@ -3,8 +3,8 @@
 process.env.NODE_ENV = 'test';
 
 const assert = require('node:assert/strict');
-const { createApp, createServer } = require('../src/server');
-const { DEMO_PASSWORD } = require('../src/database');
+const { createApp, createServer } = require('../backend/server');
+const { DEMO_PASSWORD } = require('../backend/database');
 
 async function startTestServer(t) {
   const app = createApp({ databaseFile: ':memory:', secureCookies: false });
