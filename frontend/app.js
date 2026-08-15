@@ -1089,7 +1089,7 @@ function formDefinitions() {
       submitLabel: 'Save changes',
       method: 'PATCH',
       endpoint: (context) => `${API_ENDPOINTS.appointments}/${context.recordId}`,
-      success: 'Appointment updated successfully.',
+      success: 'Appointment updated successfully. If cancelled, a notification has been sent to the patient.',
       fields: [
         selectField('status', 'Status', [
           ['Scheduled', 'Scheduled'],
@@ -1171,7 +1171,7 @@ function formDefinitions() {
       submitLabel: 'Book appointment',
       method: 'POST',
       endpoint: API_ENDPOINTS.appointments,
-      success: 'Appointment booked successfully.',
+      success: 'Appointment booked successfully. A confirmation message has been sent, and a reminder will trigger 2 hours before the schedule.',
       fields: [
         patientField(true),
         doctorField(true),
