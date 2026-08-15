@@ -2713,7 +2713,7 @@ textarea[aria-invalid="true"] {
 
 /* Responsive Overrides for Mobile viewports */
 @media (max-width: 768px) {
-  .app-shell {
+  .app-shell:not([hidden]) {
     display: flex !important;
     flex-direction: column !important;
     height: 100vh !important;
@@ -2752,7 +2752,7 @@ textarea[aria-invalid="true"] {
 
 /* Simulated Phone Frame on Desktop */
 @media (min-width: 769px) {
-  .app-shell--phone-frame {
+  .app-shell--phone-frame:not([hidden]) {
     display: flex !important;
     flex-direction: column !important;
     width: 390px !important;
@@ -2773,7 +2773,7 @@ textarea[aria-invalid="true"] {
   }
 
   /* Notch element */
-  .app-shell--phone-frame::before {
+  .app-shell--phone-frame:not([hidden])::before {
     content: '' !important;
     position: absolute !important;
     top: 0 !important;
@@ -2788,7 +2788,7 @@ textarea[aria-invalid="true"] {
   }
 
   /* Padding adjustments inside Phone Frame */
-  .app-shell--phone-frame .topbar {
+  .app-shell--phone-frame:not([hidden]) .topbar {
     padding-top: 18px !important;
     height: 74px !important;
     border-radius: 34px 34px 0 0 !important;
@@ -2797,12 +2797,12 @@ textarea[aria-invalid="true"] {
   }
 
   /* Hide regular sidebar inside phone mockup */
-  .app-shell--phone-frame .sidebar {
+  .app-shell--phone-frame:not([hidden]) .sidebar {
     display: none !important;
   }
 
   /* Embedded Bottom Tab Bar in desktop phone shell */
-  .app-shell--phone-frame .bottom-nav {
+  .app-shell--phone-frame:not([hidden]) .bottom-nav {
     display: flex !important;
     position: absolute !important;
     bottom: 0 !important;
@@ -2818,7 +2818,7 @@ textarea[aria-invalid="true"] {
     padding-bottom: 6px !important; /* spacing at bottom */
   }
 
-  .app-shell--phone-frame .main-content {
+  .app-shell--phone-frame:not([hidden]) .main-content {
     flex: 1 !important;
     overflow-y: auto !important;
     padding: 16px 16px 72px !important; /* padding for bottom nav */
@@ -2826,19 +2826,19 @@ textarea[aria-invalid="true"] {
   }
 
   /* Hide text in header inside phone mockup to save space */
-  .app-shell--phone-frame .brand-lockup span {
+  .app-shell--phone-frame:not([hidden]) .brand-lockup span {
     display: none !important;
   }
-  .app-shell--phone-frame .brand-lockup--topbar {
+  .app-shell--phone-frame:not([hidden]) .brand-lockup--topbar {
     width: auto !important;
   }
-  .app-shell--phone-frame .topbar-actions {
+  .app-shell--phone-frame:not([hidden]) .topbar-actions {
     gap: 4px !important;
   }
-  .app-shell--phone-frame .profile-copy {
+  .app-shell--phone-frame:not([hidden]) .profile-copy {
     display: none !important;
   }
-  .app-shell--phone-frame .branch-picker {
+  .app-shell--phone-frame:not([hidden]) .branch-picker {
     display: none !important;
   }
 }
