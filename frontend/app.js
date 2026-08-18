@@ -411,18 +411,11 @@ function updateUserInterface() {
   const adminLabel = elements.primaryNav.querySelector('.nav-label--admin');
   if (adminLabel) adminLabel.hidden = !allowedPages.includes('audit');
 
-  // Apply visual Phone Frame mockup container wrapper for mobile roles
-  const isMobileRole = !['admin', 'branch_manager'].includes(state.role);
-  if (isMobileRole) {
-    elements.appShell.classList.add('app-shell--phone-frame');
-    if (elements.bottomNav) elements.bottomNav.hidden = false;
-    if (elements.sidebar) elements.sidebar.hidden = true;
-    renderBottomNav();
-  } else {
-    elements.appShell.classList.remove('app-shell--phone-frame');
-    if (elements.bottomNav) elements.bottomNav.hidden = true;
-    if (elements.sidebar) elements.sidebar.hidden = false;
-  }
+  // Ensure full responsive layout across desktop and mobile viewports for all roles
+  elements.appShell.classList.remove('app-shell--phone-frame');
+  if (elements.sidebar) elements.sidebar.hidden = false;
+  if (elements.bottomNav) elements.bottomNav.hidden = window.innerWidth > 768;
+  renderBottomNav();
 }
 
 function renderBottomNav() {
