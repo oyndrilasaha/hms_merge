@@ -627,6 +627,57 @@ test('T-INPATIENT-01: bed availability and patient admission workflow', async (t
   assert.equal(admRes.payload.data.success, true);
 });
 
+test('T-TOTP-01: RFC 6238 TOTP secret generation, QR Code SVG, and 2FA verification', async (t) => {
+  const { generateSecret, generateTOTP, verifyTOTP, generateQRCodeSvg } = require('../backend/totp');
+  const secret = generateSecret();
+  assert.equal(typeof secret, 'string');
+  assert.equal(secret.length, 16);
+
+  const code = generateTOTP(secret);
+  assert.equal(code.length, 6);
+  assert.equal(verifyTOTP(code, secret), true);
+  assert.equal(verifyTOTP('000000', secret), false);
+
+  const svg = generateQRCodeSvg('otpauth://totp/StGeorgeHMS:admin?secret=' + secret);
+  assert.match(svg, /<svg/);
+  assert.match(svg, /<\/svg>/);
+});
+
+test('T-MERGE-01: duplicate patient record scanning and atomic merge', async (t) => {
+  const { request, login } = await startTestServer(t);
+  const admin = await login('admin', 'DemoPass!2026');
+
+  // Create duplicate patient record (matching last name & DOB)
+  const dupRes = await request('/api/patients', {
+    method: 'POST',
+    session: admin,
+    json: {
+      firstName: 'Ava',
+      lastName: 'Martin',
+      dateOfBirth: '1992-04-18',
+      gender: 'Female',
+      branchId: 1
+    }
+  });
+  assert.equal(dupRes.status, 201);
+  const secondaryId = dupRes.payload.data.id;
+
+  // Scan duplicates (FR62)
+  const scanRes = await request('/api/admin/patients/duplicates', { session: admin });
+  assert.equal(scanRes.status, 200);
+  assert.ok(scanRes.payload.data.items.length >= 1);
+
+  // Execute merge
+  const mergeRes = await request('/api/admin/patients/merge', {
+    method: 'POST',
+    session: admin,
+    json: { primaryId: 1, secondaryId }
+  });
+  assert.equal(mergeRes.status, 200);
+  assert.equal(mergeRes.payload.data.success, true);
+});
+
+
 
 
 

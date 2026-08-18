@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   specialisation TEXT,
   phone TEXT,
   mfa_enabled INTEGER NOT NULL DEFAULT 0 CHECK (mfa_enabled IN (0, 1)),
+  mfa_secret TEXT,
   branch_id INTEGER REFERENCES branches(id),
   active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),

@@ -289,6 +289,7 @@ function openDatabase({ filename = DEFAULT_DATABASE_FILE, seed = true } = {}) {
   if (!userCols.includes('specialisation')) db.exec('ALTER TABLE users ADD COLUMN specialisation TEXT;');
   if (!userCols.includes('phone')) db.exec('ALTER TABLE users ADD COLUMN phone TEXT;');
   if (!userCols.includes('mfa_enabled')) db.exec('ALTER TABLE users ADD COLUMN mfa_enabled INTEGER NOT NULL DEFAULT 0;');
+  if (!userCols.includes('mfa_secret')) db.exec('ALTER TABLE users ADD COLUMN mfa_secret TEXT;');
   const branchCols = db.prepare('PRAGMA table_info(branches)').all().map((c) => c.name);
   if (!branchCols.includes('departments_json')) db.exec('ALTER TABLE branches ADD COLUMN departments_json TEXT;');
 

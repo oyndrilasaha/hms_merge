@@ -293,20 +293,44 @@ async function handleLogin(event) {
   setLoginStatus('', false);
 
   try {
+    const totpInput = document.getElementById('login-totp-code');
+    const totpToken = totpInput ? totpInput.value.trim() : '';
+
     const response = await apiRequest(API_ENDPOINTS.login, {
       method: 'POST',
       body: {
         username: elements.loginUsername.value.trim(),
-        password: elements.loginPassword.value
+        password: elements.loginPassword.value,
+        totpToken
       },
       allowUnauthenticated: true
     });
+    const payload = unwrapData(response) || {};
+    if (payload.mfaRequired) {
+      setLoginStatus('🔑 2FA Required: Please enter your 6-digit authenticator code.', false);
+      let totpContainer = document.getElementById('mfa-login-container');
+      if (!totpContainer) {
+        totpContainer = document.createElement('div');
+        totpContainer.id = 'mfa-login-container';
+        totpContainer.style.marginTop = '12px';
+        totpContainer.innerHTML = `
+          <label style="display:block;margin-bottom:4px;font-size:0.85rem;font-weight:600;color:var(--ink-soft);">6-Digit Authenticator Code (2FA)</label>
+          <input type="text" id="login-totp-code" name="totpToken" placeholder="123456" maxlength="6" style="width:100%;padding:10px;font-size:1.1rem;letter-spacing:4px;text-align:center;border-radius:6px;border:1px solid var(--teal-500);" required autofocus>
+        `;
+        form.insertBefore(totpContainer, submitButton.parentNode);
+      }
+      document.getElementById('login-totp-code').focus();
+      return;
+    }
+
     applyAuthResponse(response);
     if (!state.user) throw new Error('Login succeeded but no user profile was returned.');
     elements.loginPassword.value = '';
+    const codeInp = document.getElementById('login-totp-code');
+    if (codeInp) codeInp.value = '';
     await enterApplication();
   } catch (error) {
-    setLoginStatus(error.status === 401 ? 'The username or password is incorrect.' : error.message, true);
+    setLoginStatus(error.status === 401 ? (error.message || 'The username or password is incorrect.') : error.message, true);
     elements.loginPassword.focus();
   } finally {
     setButtonBusy(submitButton, false);
@@ -1317,9 +1341,23 @@ function renderAdminManage() {
       <section class="panel">
         <header class="panel-header">
           <div><h2>Staff &amp; Clinician Roster (FR5, FR8, FR21)</h2><p>Manage system users, role-based access, and branch assignments.</p></div>
-          <button class="button button--primary button--small" type="button" data-open-form="adminUser">+ Add Staff Account</button>
+          <div style="display:flex;gap:8px;">
+            <button class="button button--secondary button--small" type="button" onclick="openMfaSetupModal()">🔑 Configure 2FA (FR50)</button>
+            <button class="button button--primary button--small" type="button" data-open-form="adminUser">+ Add Staff Account</button>
+          </div>
         </header>
         <div class="table-scroll"><table class="data-table"><thead><tr><th>Staff Member</th><th>Role</th><th>Branch</th><th>Specialisation</th><th>Status</th></tr></thead><tbody>${userRows}</tbody></table></div>
+      </section>
+
+      <!-- Duplicate Patient Merging Wizard (FR62) -->
+      <section class="panel" style="margin-top:20px;">
+        <header class="panel-header">
+          <div><h2>Fuzzy Duplicate Patient Review &amp; Merging Wizard (FR62)</h2><p>Identify potential duplicate patient registrations and merge clinical records.</p></div>
+          <button class="button button--quiet button--small" type="button" onclick="loadDuplicatePatientsWizard()">🔍 Scan Duplicates</button>
+        </header>
+        <div id="duplicate-patients-container" style="padding:16px;">
+          <p style="color:var(--ink-soft);font-size:0.85rem;">Click "Scan Duplicates" to inspect matching patient records across branches.</p>
+        </div>
       </section>
 
       <!-- Hospital Branches -->
@@ -1402,6 +1440,106 @@ window.runBackupOperation = async function(type) {
     document.getElementById('backup-status-msg').innerText = '✓ ' + (res.message || 'Operation executed successfully.');
   } catch (err) {
     document.getElementById('backup-status-msg').innerText = '✕ Error: ' + err.message;
+  }
+};
+
+window.openMfaSetupModal = async function() {
+  try {
+    const res = await apiRequest('/api/auth/mfa/setup', { method: 'POST' });
+    const data = unwrapData(res) || {};
+
+    const modal = document.createElement('dialog');
+    modal.className = 'record-dialog';
+    modal.innerHTML = `
+      <div class="dialog-content" style="max-width:440px;padding:24px;text-align:center;">
+        <header class="dialog-header">
+          <div>
+            <p class="eyebrow">MULTI-FACTOR AUTHENTICATION (FR50)</p>
+            <h2 style="font-size:1.2rem;">Setup Authenticator App</h2>
+            <p style="font-size:0.8rem;color:var(--ink-soft);">Scan QR code with Google Authenticator or Authy</p>
+          </div>
+        </header>
+        <div style="margin:16px 0;display:flex;justify-content:center;">
+          ${data.qrSvg}
+        </div>
+        <p style="font-size:0.8rem;font-family:monospace;background:#f1f5f9;padding:6px;border-radius:4px;word-break:break-all;">Secret: ${escapeHtml(data.secret)}</p>
+        <form id="mfa-verify-form" style="display:grid;gap:12px;margin-top:16px;text-align:left;">
+          <label>Enter 6-Digit Code
+            <input type="text" name="token" required placeholder="123456" maxlength="6" style="width:100%;padding:10px;font-size:1.1rem;letter-spacing:4px;text-align:center;border-radius:6px;border:1px solid #ccc;">
+          </label>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+            <button type="button" class="button button--secondary" onclick="this.closest('dialog').close()">Cancel</button>
+            <button type="submit" class="button button--primary">Activate 2FA</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.showModal();
+
+    modal.querySelector('#mfa-verify-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = e.target.token.value;
+      try {
+        const vRes = await apiRequest('/api/auth/mfa/verify', { method: 'POST', body: JSON.stringify({ token }) });
+        modal.close();
+        modal.remove();
+        showToast('✓ ' + (vRes.message || '2FA activated successfully!'), 'success');
+      } catch (err) {
+        alert('MFA Error: ' + err.message);
+      }
+    });
+  } catch (err) {
+    alert('MFA Setup Failed: ' + err.message);
+  }
+};
+
+window.loadDuplicatePatientsWizard = async function() {
+  const container = document.getElementById('duplicate-patients-container');
+  if (!container) return;
+  container.innerHTML = '<p style="color:var(--ink-soft);">Scanning patient records...</p>';
+
+  try {
+    const res = await apiRequest('/api/admin/patients/duplicates');
+    const items = unwrapData(res)?.items || [];
+    if (!items.length) {
+      container.innerHTML = '<p style="color:var(--teal-700);font-weight:600;">✓ No potential duplicate patient records detected across registered branches.</p>';
+      return;
+    }
+
+    const rows = items.map(item => `
+      <tr>
+        <td><strong>${escapeHtml(item.primaryName)}</strong><br><small>${escapeHtml(item.primaryMrn)} (DOB: ${escapeHtml(item.primaryDob)})</small></td>
+        <td><strong>${escapeHtml(item.secondaryName)}</strong><br><small>${escapeHtml(item.secondaryMrn)} (DOB: ${escapeHtml(item.secondaryDob)})</small></td>
+        <td><span class="status-badge status-badge--warning">${escapeHtml(item.matchReason)}</span></td>
+        <td><button class="button button--secondary button--small" type="button" onclick="mergePatientRecords(${item.primaryId}, ${item.secondaryId})">🔀 Merge Into Primary</button></td>
+      </tr>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th>Primary Patient</th><th>Secondary Duplicate</th><th>Match Criteria</th><th>Action</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `<p style="color:var(--danger-700);">Error scanning duplicates: ${escapeHtml(err.message)}</p>`;
+  }
+};
+
+window.mergePatientRecords = async function(primaryId, secondaryId) {
+  if (!confirm(`Are you sure you want to merge secondary patient record #${secondaryId} into primary record #${primaryId}? All medical history, appointments, and invoices will be re-linked.`)) return;
+  try {
+    const res = await apiRequest('/api/admin/patients/merge', {
+      method: 'POST',
+      body: JSON.stringify({ primaryId, secondaryId })
+    });
+    showToast('✓ ' + (res.message || 'Records merged successfully!'), 'success');
+    window.loadDuplicatePatientsWizard();
+  } catch (err) {
+    alert('Merge Failed: ' + err.message);
   }
 };
 

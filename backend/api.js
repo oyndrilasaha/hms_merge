@@ -24,6 +24,8 @@ const {
   sendData,
   stringField,
 } = require('./http-utils');
+const { generateSecret, generateTOTP, verifyTOTP, generateQRCodeSvg } = require('./totp');
+const { dispatchNotification } = require('./notifications-service');
 
 const ALL_ROLES = [
   'Admin', 'Doctor', 'Nurse', 'Receptionist', 'Lab Technician',
@@ -167,11 +169,23 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
       throw new ApiError(401, 'INVALID_CREDENTIALS', 'Username or password is incorrect.');
     }
 
+    const totpToken = stringField(body, 'totpToken', { max: 10 });
+    if (user.mfa_enabled && user.mfa_secret) {
+      if (!totpToken) {
+        sendData(res, { mfaRequired: true, username: user.username }, 200);
+        return;
+      }
+      const mfaValid = verifyTOTP(totpToken, user.mfa_secret);
+      if (!mfaValid) {
+        throw new ApiError(401, 'INVALID_MFA_TOKEN', 'The 6-digit authenticator code is invalid or expired.');
+      }
+    }
+
     failedLogins.delete(key);
     db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(new Date().toISOString());
     const created = createSession(db, user.id);
     const session = getSession(db, { headers: { cookie: `sgh_session=${created.token}` } });
-    log(req, session, 'LOGIN_SUCCEEDED', 'user', user.id, { username: user.username });
+    log(req, session, 'LOGIN_SUCCEEDED', 'user', user.id, { username: user.username, mfaVerified: Boolean(user.mfa_enabled) });
     sendData(res, {
       user: publicUser(session),
       csrfToken: created.csrfToken,
@@ -1533,6 +1547,76 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     }
   }
 
+  // TOTP 2FA MFA Handlers (FR50)
+  async function setupMfa(req, res, session) {
+    const secret = generateSecret();
+    const otpauthUrl = `otpauth://totp/StGeorgeHMS:${encodeURIComponent(session.username)}?secret=${secret}&issuer=StGeorgeHMS`;
+    const qrSvg = generateQRCodeSvg(otpauthUrl, `MFA Setup for ${session.username}`);
+
+    // Store temp secret in user record
+    db.prepare('UPDATE users SET mfa_secret = ? WHERE id = ?').run(secret, session.id);
+    log(req, session, 'MFA_SETUP_INITIATED', 'user', session.id);
+
+    sendData(res, { secret, otpauthUrl, qrSvg });
+  }
+
+  async function verifyMfa(req, res, session) {
+    const body = await readJson(req);
+    const token = stringField(body, 'token', { required: true, min: 6, max: 6, label: '2FA Code' });
+
+    const user = rowOr404(db.prepare('SELECT * FROM users WHERE id = ?').get(session.id), 'User');
+    if (!user.mfa_secret) throw new ApiError(400, 'MFA_NOT_INITIALIZED', 'Please initiate MFA setup first.');
+
+    const isValid = verifyTOTP(token, user.mfa_secret);
+    if (!isValid) throw new ApiError(400, 'INVALID_TOTP_CODE', 'The 6-digit authenticator code is invalid.');
+
+    db.prepare('UPDATE users SET mfa_enabled = 1 WHERE id = ?').run(session.id);
+    log(req, session, 'MFA_ENABLED', 'user', session.id);
+
+    sendData(res, { success: true, message: 'Multi-factor authentication (2FA) is now active.' });
+  }
+
+  // Duplicate Patient Merging Wizard (FR62)
+  function getDuplicatePatients(req, res, session) {
+    requireRole(req, session, ['Admin', 'Receptionist', 'Branch Manager']);
+    const rows = db.prepare(`
+      SELECT p1.id AS primary_id, p1.first_name || ' ' || p1.last_name AS primary_name, p1.medical_record_number AS primary_mrn, p1.date_of_birth AS primary_dob, p1.phone AS primary_phone,
+             p2.id AS secondary_id, p2.first_name || ' ' || p2.last_name AS secondary_name, p2.medical_record_number AS secondary_mrn, p2.date_of_birth AS secondary_dob, p2.phone AS secondary_phone,
+             'Matching last name & DOB' AS match_reason
+      FROM patients p1
+      JOIN patients p2 ON p1.id < p2.id AND p1.last_name = p2.last_name AND p1.date_of_birth = p2.date_of_birth
+    `).all();
+    sendData(res, { items: camelize(rows) });
+  }
+
+  async function mergePatients(req, res, session) {
+    requireRole(req, session, ['Admin']);
+    const body = await readJson(req);
+    const primaryId = integerField(body, 'primaryId', { required: true });
+    const secondaryId = integerField(body, 'secondaryId', { required: true });
+
+    if (primaryId === secondaryId) throw new ApiError(400, 'INVALID_MERGE', 'Primary and secondary patient records cannot be the same.');
+
+    rowOr404(db.prepare('SELECT id FROM patients WHERE id = ?').get(primaryId), 'Primary patient');
+    const secondary = rowOr404(db.prepare('SELECT * FROM patients WHERE id = ?').get(secondaryId), 'Secondary patient');
+
+    withTransaction(db, () => {
+      // Re-link appointments, clinical notes, lab orders, dispensings, invoices
+      db.prepare('UPDATE appointments SET patient_id = ? WHERE patient_id = ?').run(primaryId, secondaryId);
+      db.prepare('UPDATE clinical_notes SET patient_id = ? WHERE patient_id = ?').run(primaryId, secondaryId);
+      db.prepare('UPDATE lab_orders SET patient_id = ? WHERE patient_id = ?').run(primaryId, secondaryId);
+      db.prepare('UPDATE dispensings SET patient_id = ? WHERE patient_id = ?').run(primaryId, secondaryId);
+      db.prepare('UPDATE invoices SET patient_id = ? WHERE patient_id = ?').run(primaryId, secondaryId);
+      db.prepare('UPDATE admissions SET patient_id = ? WHERE patient_id = ?').run(primaryId, secondaryId);
+
+      // Remove secondary duplicate record
+      db.prepare('DELETE FROM patients WHERE id = ?').run(secondaryId);
+      log(req, session, 'PATIENTS_MERGED', 'patient', primaryId, { secondaryId, secondaryMrn: secondary.medical_record_number });
+    });
+
+    sendData(res, { success: true, message: `Successfully merged Patient #${secondaryId} into primary record #${primaryId}.` });
+  }
+
   function getBranches(req, res, session) {
     requireRole(req, session, ALL_ROLES);
     const rows = isAdmin(session)
@@ -1775,6 +1859,22 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
     }
     if (req.method === 'POST' && url.pathname === '/api/admin/backup') {
       await recordBackupRestore(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/auth/mfa/setup') {
+      await setupMfa(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/auth/mfa/verify') {
+      await verifyMfa(req, res, session);
+      return true;
+    }
+    if (req.method === 'GET' && url.pathname === '/api/admin/patients/duplicates') {
+      getDuplicatePatients(req, res, session);
+      return true;
+    }
+    if (req.method === 'POST' && url.pathname === '/api/admin/patients/merge') {
+      await mergePatients(req, res, session);
       return true;
     }
 
