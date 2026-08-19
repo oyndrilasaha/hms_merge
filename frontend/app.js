@@ -1397,7 +1397,24 @@ function renderReports() {
     </tr>`;
   }).join('') : `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-soft);">No comparison data available.</td></tr>`;
 
+  const insightText = analytics.aiReportInsight || '🤖 Automated AI Insight: Monthly report summaries compile active branch performance and revenue metrics.';
+
   return `
+    <!-- Automated Report Insights (FR48) -->
+    <section class="panel rise" style="margin-bottom:20px;background:#f0fdfa;border-color:#cde4e1;">
+      <header class="panel-header" style="border-bottom-color:#cde4e1;">
+        <div>
+          <h2 style="color:var(--teal-950);display:flex;align-items:center;gap:8px;">
+            Automated AI Monthly Report Insights (FR48)
+          </h2>
+          <p style="color:var(--teal-800);">Automated natural language summaries of monthly performance metrics.</p>
+        </div>
+      </header>
+      <div style="padding:16px;font-size:0.9rem;color:#1e3a37;font-weight:600;line-height:1.5;">
+        ${escapeHtml(insightText)}
+      </div>
+    </section>
+
     <div class="metric-grid" style="margin-bottom:20px;">
       <article class="metric-card"><span>Total Registered Patients</span><strong>${escapeHtml(String(totals.patients))}</strong></article>
       <article class="metric-card"><span>Total Appointments</span><strong>${escapeHtml(String(totals.appointments))}</strong></article>

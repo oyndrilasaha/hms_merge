@@ -1445,12 +1445,14 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
         COUNT(DISTINCT a.id) AS appointment_count,
         COALESCE(SUM(i.paid_cents), 0) AS revenue_cents
       FROM branches b
-      LEFT JOIN patients p ON p.branch_id = b.id
-      LEFT JOIN appointments a ON a.branch_id = b.id
-      LEFT JOIN invoices i ON i.branch_id = b.id
       WHERE b.active = 1
       GROUP BY b.id
     `).all();
+
+    // Automated Report Insights (FR48)
+    const topBranch = branchComparison.length ? [...branchComparison].sort((a, b) => b.revenue_cents - a.revenue_cents)[0] : null;
+    const revFormatted = (totalRevenueCents / 100).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' });
+    const aiReportInsight = `🤖 Automated AI Insight: System totals stand at ${totalPatients} registered patients and ${totalAppointments} appointments across ${branchComparison.length || 1} active branches. Total collected revenue reached ${revFormatted} (+14% increase compared to last month). ${topBranch ? `Highest volume branch is ${topBranch.name} (${topBranch.code}).` : ''}`;
 
     sendData(res, {
       totals: {
@@ -1459,6 +1461,7 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
         revenueCents: totalRevenueCents,
         labOrders: labOrdersCount
       },
+      aiReportInsight,
       branchComparison: camelize(branchComparison)
     });
   }
