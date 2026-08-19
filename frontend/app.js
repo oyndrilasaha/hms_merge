@@ -1405,59 +1405,70 @@ function renderReports() {
       { label: 'Top Performing Branch', value: 'Central Branch', type: 'info' }
     ],
     summary: analytics.aiReportInsight || 'Cross-branch analytics index active consultation bookings and diagnostic lab orders indicating strong financial performance.',
-    recommendation: 'Strategic Recommendation: Maintain clinician staffing allocation at high-demand branches and expand morning consultation slots.'
+    recommendation: 'Maintain clinician staffing allocation at high-demand branches and expand morning consultation slots.'
   };
 
   const highlightChips = (aiData.highlights || []).map(h => {
-    let bg = 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;';
+    let bg = 'background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;';
     if (h.type === 'primary') bg = 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;';
     if (h.type === 'info') bg = 'background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4;';
-    return `<div style="display:flex;flex-direction:column;padding:10px 14px;border-radius:10px;${bg}">
-      <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;opacity:0.85;">${escapeHtml(h.label)}</span>
-      <strong style="font-size:1.15rem;font-weight:800;margin-top:2px;">${escapeHtml(h.value)}</strong>
+    return `<div style="display:flex;flex-direction:column;padding:8px 12px;border-radius:8px;${bg}">
+      <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;opacity:0.85;">${escapeHtml(h.label)}</span>
+      <strong style="font-size:1.05rem;font-weight:800;margin-top:2px;">${escapeHtml(h.value)}</strong>
     </div>`;
   }).join('');
 
   return `
     <!-- Executive AI Report Insights Component (FR48) -->
-    <section class="panel rise" style="margin-bottom:24px;background:linear-gradient(135deg, #0f172a 0%, #0f2b28 100%);color:#fff;border:none;border-radius:16px;box-shadow:0 12px 30px -8px rgba(15,23,42,0.25);overflow:hidden;">
-      <div style="padding:22px 24px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:38px;height:38px;border-radius:10px;background:rgba(20,184,166,0.2);display:grid;place-items:center;border:1px solid rgba(20,184,166,0.4);">
-            <svg style="width:20px;height:20px;fill:#2dd4bf;"><use href="#icon-chart"></use></svg>
-          </div>
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:0.65rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;background:rgba(20,184,166,0.25);color:#5eead4;padding:3px 8px;border-radius:99px;border:1px solid rgba(20,184,166,0.3);">✨ AI Executive Insights • FR48</span>
-            </div>
-            <h2 style="font-size:1.15rem;margin-top:4px;color:#fff;font-weight:700;">${escapeHtml(aiData.headline)}</h2>
-          </div>
+    <section class="panel rise" style="margin-bottom:20px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03);overflow:hidden;">
+      <header class="panel-header" style="background:#f8fafc;padding:14px 20px;border-bottom:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:0.68rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;background:#e0f2fe;color:#0369a1;padding:4px 10px;border-radius:99px;border:1px solid #bae6fd;">✨ AI Executive Insights • FR48</span>
+          <h2 style="font-size:1.05rem;color:#0f172a;font-weight:700;margin:0;">${escapeHtml(aiData.headline)}</h2>
         </div>
-      </div>
-
-      <div style="padding:22px 24px;display:grid;gap:18px;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+      </header>
+      
+      <div style="padding:18px 20px;display:grid;gap:14px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:10px;">
           ${highlightChips}
         </div>
 
-        <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:16px;border-left:4px solid #2dd4bf;">
-          <p style="margin:0;font-size:0.9rem;line-height:1.6;color:#e2e8f0;">
+        <div style="background:#f8fafc;border-radius:10px;padding:14px;border-left:4px solid #06858c;">
+          <p style="margin:0;font-size:0.88rem;line-height:1.55;color:#334155;">
             ${escapeHtml(aiData.summary)}
           </p>
-          ${aiData.recommendation ? `<p style="margin:10px 0 0;font-size:0.83rem;line-height:1.5;color:#94a3b8;font-weight:600;display:flex;align-items:center;gap:6px;">
-            💡 <span>${escapeHtml(aiData.recommendation)}</span>
+          ${aiData.recommendation ? `<p style="margin:8px 0 0;font-size:0.82rem;line-height:1.45;color:#0f766e;font-weight:600;">
+            💡 <strong>Strategic Takeaway:</strong> ${escapeHtml(aiData.recommendation)}
           </p>` : ''}
         </div>
       </div>
     </section>
 
+    <!-- Top Key Metrics Grid -->
     <div class="metric-grid" style="margin-bottom:20px;">
-      <article class="metric-card"><span>Total Registered Patients</span><strong>${escapeHtml(String(totals.patients))}</strong></article>
-      <article class="metric-card"><span>Total Appointments</span><strong>${escapeHtml(String(totals.appointments))}</strong></article>
-      <article class="metric-card"><span>Total Collected Revenue</span><strong>${formatCurrency(totals.revenueCents || 0)}</strong></article>
-      <article class="metric-card"><span>Total Lab Orders</span><strong>${escapeHtml(String(totals.labOrders))}</strong></article>
+      <article class="metric-card">
+        <span>Total Registered Patients</span>
+        <strong>${escapeHtml(String(totals.patients))}</strong>
+        <small>registered files</small>
+      </article>
+      <article class="metric-card">
+        <span>Total Appointments</span>
+        <strong>${escapeHtml(String(totals.appointments))}</strong>
+        <small>bookings tracked</small>
+      </article>
+      <article class="metric-card">
+        <span>Total Revenue Collected</span>
+        <strong>${formatCurrency(totals.revenueCents || 0)}</strong>
+        <small>AUD MTD</small>
+      </article>
+      <article class="metric-card">
+        <span>Total Lab Orders</span>
+        <strong>${escapeHtml(String(totals.labOrders))}</strong>
+        <small>diagnostic requests</small>
+      </article>
     </div>
 
+    <!-- Branch Performance Benchmark Table (FR44) -->
     <section class="panel rise" style="margin-bottom:20px;">
       <header class="panel-header">
         <div><h2>Branch &amp; Department Performance Benchmark (FR44)</h2><p>Side-by-side comparison of active branch operational metrics.</p></div>

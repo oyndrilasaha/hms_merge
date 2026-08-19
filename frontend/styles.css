@@ -875,20 +875,41 @@ textarea[aria-invalid="true"] {
 
 .metric-card {
   position: relative;
-  min-height: 145px;
-  padding: 21px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-.metric-card::after {
-  position: absolute;
-  top: -28px;
-  right: -24px;
-  width: 92px;
-  height: 92px;
-  background: var(--teal-50);
-  border-radius: 50%;
-  content: "";
+.metric-card > span:first-child {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.metric-card > strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.metric-card > small {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  font-weight: 500;
 }
 
 .metric-card__top {
