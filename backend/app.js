@@ -36,7 +36,9 @@ function serveFile(req, res, file) {
   const stat = fs.statSync(file);
   const type = MIME_TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream';
   res.writeHead(200, {
-    'Cache-Control': path.basename(file) === 'index.html' ? 'no-cache' : 'public, max-age=3600',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
     'Content-Length': stat.size,
     'Content-Type': type,
   });
