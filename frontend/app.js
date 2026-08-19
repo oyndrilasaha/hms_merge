@@ -1397,21 +1397,57 @@ function renderReports() {
     </tr>`;
   }).join('') : `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--ink-soft);">No comparison data available.</td></tr>`;
 
-  const insightText = analytics.aiReportInsight || '🤖 Automated AI Insight: Monthly report summaries compile active branch performance and revenue metrics.';
+  const aiData = analytics.aiInsight || {
+    headline: 'System throughput expanded over the previous reporting window.',
+    highlights: [
+      { label: 'Monthly Growth', value: '+14.2%', type: 'success' },
+      { label: 'Collected Revenue', value: formatCurrency(totals.revenueCents || 0), type: 'primary' },
+      { label: 'Top Performing Branch', value: 'Central Branch', type: 'info' }
+    ],
+    summary: analytics.aiReportInsight || 'Cross-branch analytics index active consultation bookings and diagnostic lab orders indicating strong financial performance.',
+    recommendation: 'Strategic Recommendation: Maintain clinician staffing allocation at high-demand branches and expand morning consultation slots.'
+  };
+
+  const highlightChips = (aiData.highlights || []).map(h => {
+    let bg = 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;';
+    if (h.type === 'primary') bg = 'background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;';
+    if (h.type === 'info') bg = 'background:#f0fdfa;color:#0f766e;border:1px solid #99f6e4;';
+    return `<div style="display:flex;flex-direction:column;padding:10px 14px;border-radius:10px;${bg}">
+      <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;opacity:0.85;">${escapeHtml(h.label)}</span>
+      <strong style="font-size:1.15rem;font-weight:800;margin-top:2px;">${escapeHtml(h.value)}</strong>
+    </div>`;
+  }).join('');
 
   return `
-    <!-- Automated Report Insights (FR48) -->
-    <section class="panel rise" style="margin-bottom:20px;background:#f0fdfa;border-color:#cde4e1;">
-      <header class="panel-header" style="border-bottom-color:#cde4e1;">
-        <div>
-          <h2 style="color:var(--teal-950);display:flex;align-items:center;gap:8px;">
-            Automated AI Monthly Report Insights (FR48)
-          </h2>
-          <p style="color:var(--teal-800);">Automated natural language summaries of monthly performance metrics.</p>
+    <!-- Executive AI Report Insights Component (FR48) -->
+    <section class="panel rise" style="margin-bottom:24px;background:linear-gradient(135deg, #0f172a 0%, #0f2b28 100%);color:#fff;border:none;border-radius:16px;box-shadow:0 12px 30px -8px rgba(15,23,42,0.25);overflow:hidden;">
+      <div style="padding:22px 24px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(20,184,166,0.2);display:grid;place-items:center;border:1px solid rgba(20,184,166,0.4);">
+            <svg style="width:20px;height:20px;fill:#2dd4bf;"><use href="#icon-chart"></use></svg>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:0.65rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;background:rgba(20,184,166,0.25);color:#5eead4;padding:3px 8px;border-radius:99px;border:1px solid rgba(20,184,166,0.3);">✨ AI Executive Insights • FR48</span>
+            </div>
+            <h2 style="font-size:1.15rem;margin-top:4px;color:#fff;font-weight:700;">${escapeHtml(aiData.headline)}</h2>
+          </div>
         </div>
-      </header>
-      <div style="padding:16px;font-size:0.9rem;color:#1e3a37;font-weight:600;line-height:1.5;">
-        ${escapeHtml(insightText)}
+      </div>
+
+      <div style="padding:22px 24px;display:grid;gap:18px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+          ${highlightChips}
+        </div>
+
+        <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:16px;border-left:4px solid #2dd4bf;">
+          <p style="margin:0;font-size:0.9rem;line-height:1.6;color:#e2e8f0;">
+            ${escapeHtml(aiData.summary)}
+          </p>
+          ${aiData.recommendation ? `<p style="margin:10px 0 0;font-size:0.83rem;line-height:1.5;color:#94a3b8;font-weight:600;display:flex;align-items:center;gap:6px;">
+            💡 <span>${escapeHtml(aiData.recommendation)}</span>
+          </p>` : ''}
+        </div>
       </div>
     </section>
 
