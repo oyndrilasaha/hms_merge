@@ -2691,11 +2691,16 @@ async function syncOfflineActions() {
 }
 
 async function installApplication() {
-  if (!state.installPrompt) return;
-  state.installPrompt.prompt();
-  await state.installPrompt.userChoice;
-  state.installPrompt = null;
-  elements.installButton.hidden = true;
+  if (state.installPrompt) {
+    state.installPrompt.prompt();
+    const choice = await state.installPrompt.userChoice;
+    if (choice && choice.outcome === 'accepted') {
+      showToast('✓ St George HMS app installed on your device!', 'success');
+    }
+    state.installPrompt = null;
+  } else {
+    alert('📱 How to Download & Install St George HMS on Your Device:\n\n• Chrome / Edge (Desktop & Android): Click the 📥 Install icon in your address bar or menu ➔ select "Install St George HMS".\n• iPhone / iPad (Safari): Tap the Share button (square with up arrow) ➔ select "Add to Home Screen".\n• Mac Safari: Click File ➔ "Add to Dock".');
+  }
 }
 
 async function registerServiceWorker() {

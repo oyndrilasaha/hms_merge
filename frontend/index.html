@@ -521,8 +521,10 @@
         <span><strong>St George</strong><small>Hospital Management System</small></span>
       </a>
       <div class="topbar-actions">
-        <span id="network-status" class="network-status" title="Network status"><i></i><span>Online</span></span>
-        <button id="install-button" class="button button--quiet install-button" type="button" hidden>Install app</button>
+        <button id="install-button" class="button button--secondary button--small install-button" type="button">
+          <svg aria-hidden="true" style="width:14px;height:14px;fill:currentColor;margin-right:4px;"><use href="#icon-download"></use></svg>
+          Install App
+        </button>
         <label class="branch-picker" for="branch-select">
           <span>Branch</span>
           <select id="branch-select" data-testid="branch-selector"><option value="">All branches</option></select>
