@@ -438,7 +438,7 @@ test('T-PWA-01: static shell, manifest, worker and icons are served with securit
   assert.equal(index.status, 200);
   assert.match(index.response.headers.get('content-type'), /text\/html/);
   assert.match(index.text, /rel="manifest" href="\/manifest\.webmanifest"/);
-  assert.match(index.text, /<script src="\/app\.js" defer><\/script>/);
+  assert.match(index.text, /<script src="\/app\.js(?:\?v=\d+)?" defer><\/script>/);
   assert.match(index.response.headers.get('content-security-policy'), /default-src 'self'/);
   assert.equal(index.response.headers.get('x-frame-options'), 'DENY');
 

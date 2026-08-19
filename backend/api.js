@@ -1445,6 +1445,9 @@ function createApi(db, { secureCookies = process.env.NODE_ENV === 'production' }
         COUNT(DISTINCT a.id) AS appointment_count,
         COALESCE(SUM(i.paid_cents), 0) AS revenue_cents
       FROM branches b
+      LEFT JOIN patients p ON p.branch_id = b.id
+      LEFT JOIN appointments a ON a.branch_id = b.id
+      LEFT JOIN invoices i ON i.branch_id = b.id
       WHERE b.active = 1
       GROUP BY b.id
     `).all();
